@@ -12,7 +12,7 @@ import { statusBadge } from '../lib/hours.js';
 import { ago, num } from '../lib/format.js';
 import { TIERS, CATEGORIES } from '../data/taxonomy.js';
 
-boot({ active: '' });
+boot({ active: '', chrome: 'header', footer: true });
 
 const root = $('#root');
 let tab = params.get('tab') ?? 'businesses';

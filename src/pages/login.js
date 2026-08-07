@@ -3,7 +3,7 @@
 import { boot, $, toast } from './_boot.js';
 import { HAS_FIREBASE } from '../lib/config.js';
 
-boot({ active: '', compact: true });
+boot({ active: 'profile' });
 
 const btn = $('#google');
 const note = $('#note');

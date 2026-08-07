@@ -16,7 +16,7 @@ import { filters, readFromURL, setFilter, activeCount, resetFilters } from '../l
 import { CATEGORIES } from '../data/taxonomy.js';
 import { num } from '../lib/format.js';
 
-boot({ active: 'map', compact: true, footer: false });
+boot({ active: 'map' });
 readFromURL();
 
 /* ─── ხატულები სტატიკურ მარკაპში ───────────────────────────── */

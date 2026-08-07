@@ -14,11 +14,13 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       input: {
-        home: resolve('index.html'),
+        feed: resolve('index.html'),
         map: resolve('map.html'),
         business: resolve('business.html'),
         category: resolve('category.html'),
         search: resolve('search.html'),
+        saved: resolve('saved.html'),
+        profile: resolve('profile.html'),
         promos: resolve('promos.html'),
         dashboard: resolve('dashboard.html'),
         admin: resolve('admin.html'),

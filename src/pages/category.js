@@ -14,7 +14,7 @@ import { CATEGORIES, CATEGORY_MAP, DISTRICT_MAP, catName, subName } from '../dat
 import { num } from '../lib/format.js';
 import { setTitle, setDescription, setCanonical } from '../lib/seo.js';
 
-boot({ active: 'category', canonical: false });
+boot({ active: 'search', canonical: false });
 readFromURL();
 
 const PAGE = 24;

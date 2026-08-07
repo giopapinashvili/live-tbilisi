@@ -1,142 +1,388 @@
-/** ბიზნესის გვერდი. */
+/**
+ * ბიზნესის გვერდი — ინსტაგრამის პროფილის სტრუქტურით.
+ *
+ *   ლოგო + სტატისტიკა + ბიო
+ *   გაყოლა · მარშრუტი · დარეკვა
+ *   Highlights = მენიუს ჯგუფები (დაჭერით ბადე იფილტრება)
+ *   ტაბები: ბადე · მენიუ · პოსტები · შეფასებები
+ *
+ * განსხვავება ინსტაგრამისგან: ბადეში ფოტო კი არა, პროდუქტია —
+ * ფასით, ინგრედიენტებით და კატალოგის კავშირით. იგივე გარეგნობა,
+ * ძებნადი შიგთავსით.
+ */
 
-import { boot, $, params, esc, toast } from './_boot.js';
-import { detailView, bindDetailActions, jsonLd } from '../components/detail.js';
-import { businessCard, emptyState, EMPTY } from '../components/cards.js';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/components.css';
+import '../styles/pages.css';
+import '../styles/app.css';
+
+import { $, esc, attr, params, toast, delegate } from '../lib/dom.js';
+import { icon } from '../lib/icons.js';
+import { followSystemTheme } from '../lib/theme.js';
+import { mountTabBar } from '../components/tabbar.js';
+import { emptyState, EMPTY, stars } from '../components/cards.js';
+import { jsonLd } from '../components/detail.js';
 import { loadCity, getBusiness, getState } from '../lib/store.js';
-import { catName, CATEGORY_MAP, DISTRICT_MAP } from '../data/taxonomy.js';
-import { haversine } from '../lib/format.js';
-import { HAS_FIREBASE } from '../lib/config.js';
+import { loadItems, relatedTo, businessesWithCatalog } from '../lib/items.js';
+import { emojiFor, emojiForCatalog } from '../lib/feed.js';
+import { statusBadge, weekTable } from '../lib/hours.js';
+import { price, phone as fmtPhone, num, distance, haversine, ago } from '../lib/format.js';
+import { catName, subName, CATEGORY_MAP, DISTRICT_MAP, ATTRIBUTE_MAP } from '../data/taxonomy.js';
+import { record, toggleFollow, toggleSave, isFollowing, isSaved } from '../lib/taste.js';
 import { setTitle, setDescription, setCanonical, setJsonLd } from '../lib/seo.js';
+import { HAS_FIREBASE } from '../lib/config.js';
 
-boot({ active: '', canonical: false });
+followSystemTheme();
+mountTabBar({ active: '' });
 
+const root = $('#pf');
 const slug = params.get('b');
-const host = $('#detail');
+let biz = null;
+let activeGroup = null;
+let activeTab = 'grid';
 
 if (!slug) {
-  host.innerHTML = emptyState({ ...EMPTY.noResults, title: 'ბიზნესი მითითებული არ არის' });
+  root.innerHTML = emptyState({ ...EMPTY.noResults, title: 'ბიზნესი მითითებული არ არის' });
 } else {
-  host.innerHTML = detailView(null, { loading: true });
-  init(slug);
+  root.innerHTML = '<div class="skel" style="height:120px; border-radius:var(--r-md)"></div>';
+  init();
 }
 
-async function init(key) {
-  await loadCity();
-  const b = await getBusiness(key);
+async function init() {
+  await Promise.all([loadCity(), loadItems()]);
+  biz = await getBusiness(slug);
 
-  if (!b) {
-    host.innerHTML = emptyState({
+  if (!biz) {
+    root.innerHTML = emptyState({
       icon: 'search',
       title: 'ბიზნესი ვერ მოიძებნა',
-      text: 'შესაძლოა ბმული მოძველებულია ან ჩანაწერი წაშლილია.',
+      text: 'შესაძლოა ბმული მოძველებულია.',
       action: { href: '/map.html', label: 'რუკაზე დაბრუნება' },
     });
     return;
   }
 
-  setTitle(`${b.name} — თბილისი LIVE`);
-  setDescription(buildDescription(b));
-  // canonical რეალურ, მომუშავე მისამართზე. /b/{slug} ლამაზი ფორმაა,
-  // მაგრამ rewrite-ზეა დამოკიდებული — თუ ჰოსტინგზე არ მუშაობს,
-  // canonical 404-ზე მიუთითებდა და SEO დაზიანდებოდა.
-  setCanonical(`/business.html?b=${b.slug ?? b.id}`);
-  setJsonLd(jsonLd(b));
+  setTitle(`${biz.name} — თბილისი LIVE`);
+  setDescription(buildDescription(biz));
+  setCanonical(`/business.html?b=${biz.slug ?? biz.id}`);
+  setJsonLd(jsonLd(biz));
+  record('open', { business: biz });
 
-  renderCrumbs(b);
-  host.innerHTML = detailView(b, { level: 1 });
-  bindDetailActions(host, { onReport: () => openReport(b) });
-
-  $('#open-in-map').href = `/map.html?b=${encodeURIComponent(b.slug ?? b.id)}#16.5/${b.lat}/${b.lon}`;
-
-  renderNearby(b);
-  mountMiniMap(b);
+  paint();
 }
 
-/* ─── SEO ──────────────────────────────────────────────────── */
+/* ─── რენდერი ──────────────────────────────────────────────── */
 
-function buildDescription(b) {
-  const bits = [b.name, catName(b.category)];
-  if (b.district) bits.push(DISTRICT_MAP[b.district]?.ka);
-  if (b.address) bits.push(b.address);
-  bits.push('სამუშაო საათები, კონტაქტი და მისამართი — თბილისი LIVE');
-  return bits.filter(Boolean).join(' · ').slice(0, 300);
+function paint() {
+  const st = statusBadge(biz);
+  const cat = CATEGORY_MAP[biz.category];
+  const dist = DISTRICT_MAP[biz.district];
+  const groups = menuGroups();
+  const tint = `--ring:var(--cat-${biz.category ?? 'public'}); --tint:var(--cat-${biz.category ?? 'public'})`;
+
+  root.innerHTML = `
+    <div class="row" style="margin-bottom:var(--sp-4)">
+      <a class="btn btn-ghost btn-sm" href="/">${icon('back', { size: 14 })} ფიდი</a>
+      <span class="spacer"></span>
+      <button class="btn btn-ghost btn-icon btn-sm" type="button" data-act="share" aria-label="გაზიარება">
+        ${icon('share', { size: 16 })}
+      </button>
+      <button class="btn btn-ghost btn-icon btn-sm" type="button" data-act="report" aria-label="შეცდომა">
+        ${icon('flag', { size: 16 })}
+      </button>
+    </div>
+
+    <header class="pf-head" style="${tint}">
+      <div class="pf-avatar" style="background:var(--cat-${biz.category ?? 'public'}); font-size:34px">
+        ${biz.logo || biz.cover
+    ? `<img src="${attr(biz.logo || biz.cover)}" alt="">`
+    : emojiFor(biz)}
+      </div>
+
+      <div class="pf-info">
+        <h1 class="pf-name">
+          ${esc(biz.name)}
+          ${biz.tier >= 2 ? `<span class="pf-verified" title="სრული პროფილი">${icon('check', { size: 16 })}</span>` : ''}
+        </h1>
+
+        <div class="pf-stats">
+          <div class="pf-stat"><b>${num(biz.items?.length ?? 0)}</b><span>პროდუქტი</span></div>
+          <div class="pf-stat"><b>${biz.ratingCount ? biz.ratingAvg.toFixed(1) : '—'}</b><span>შეფასება</span></div>
+          <div class="pf-stat"><b>${num(biz.viewCount ?? 0)}</b><span>ნახვა</span></div>
+        </div>
+
+        <div class="pf-bio">
+          <div>${esc(cat?.ka ?? '')}${biz.subcategories?.length ? ` · ${esc(subName(biz.subcategories[0]))}` : ''}</div>
+          ${biz.address ? `<div>${esc(biz.address)}${dist ? `, ${esc(dist.ka)}` : ''}</div>` : ''}
+          <div class="row" style="gap:var(--sp-2); margin-top:var(--sp-2)">
+            <span class="badge badge-${st.state}">${esc(st.label)}</span>
+          </div>
+          ${biz.website ? `<div style="margin-top:4px"><a href="${attr(biz.website)}" target="_blank" rel="noopener nofollow">${esc(biz.website.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</a></div>` : ''}
+        </div>
+      </div>
+    </header>
+
+    <div class="pf-actions">
+      <button class="btn ${isFollowing(biz.id) ? '' : 'btn-primary'}" type="button" data-act="follow">
+        ${isFollowing(biz.id) ? 'გამოწერილი' : 'გაყოლა'}
+      </button>
+      <a class="btn" href="https://www.google.com/maps/dir/?api=1&destination=${biz.lat},${biz.lon}"
+         target="_blank" rel="noopener" data-act="route">მარშრუტი</a>
+      ${biz.phone?.length
+    ? `<a class="btn" href="tel:${attr(biz.phone[0])}" data-act="call">დარეკვა</a>`
+    : '<button class="btn" type="button" disabled>ტელეფონი უცნობია</button>'}
+      <button class="btn btn-icon" type="button" data-act="save" aria-pressed="${isSaved(biz.id)}"
+              aria-label="შენახვა">${icon('heart', { size: 18, fill: isSaved(biz.id) })}</button>
+    </div>
+
+    ${groups.length ? `
+      <div class="pf-highlights">
+        <button class="hl" type="button" data-group="" aria-pressed="${activeGroup === null}">
+          <span class="hl-ring">${emojiFor(biz)}</span>
+          <span class="hl-name">ყველა</span>
+        </button>
+        ${groups.map((g) => `
+          <button class="hl" type="button" data-group="${attr(g.name)}" aria-pressed="${activeGroup === g.name}">
+            <span class="hl-ring">${g.emoji}</span>
+            <span class="hl-name">${esc(g.name)}</span>
+          </button>`).join('')}
+      </div>` : ''}
+
+    <div class="pf-tabs" role="tablist">
+      ${tabBtn('grid', 'ბადე')}
+      ${tabBtn('menu', 'მენიუ')}
+      ${tabBtn('posts', 'პოსტები')}
+      ${tabBtn('info', 'ინფო')}
+    </div>
+
+    <div class="pf-panel" id="panel">${panel()}</div>
+  `;
 }
 
-/* ─── პურის ნამცეცები ──────────────────────────────────────── */
+const tabBtn = (id, label) => `
+  <button class="pf-tab" type="button" role="tab" data-tab="${id}"
+          aria-selected="${activeTab === id}">${label}</button>`;
 
-function renderCrumbs(b) {
-  const cat = CATEGORY_MAP[b.category];
-  const dist = DISTRICT_MAP[b.district];
-  const parts = ['<a href="/">მთავარი</a>'];
-  if (cat) parts.push(`<a href="/category.html?cat=${cat.id}">${esc(cat.ka)}</a>`);
-  if (cat && dist) parts.push(`<a href="/category.html?cat=${cat.id}&district=${dist.id}">${esc(dist.ka)}</a>`);
-  parts.push(`<span class="dim">${esc(b.name)}</span>`);
-  $('#crumbs').innerHTML = parts.join('<span class="sep">/</span>');
+/** მენიუს ჯგუფები = highlights */
+function menuGroups() {
+  const items = biz.items ?? [];
+  const map = new Map();
+  for (const it of items) {
+    const g = it.group || 'სხვა';
+    if (!map.has(g)) map.set(g, { name: g, items: [], emoji: emojiForCatalog(it.catalogId) });
+    map.get(g).items.push(it);
+  }
+  return [...map.values()];
 }
 
-/* ─── ახლომდებარე ──────────────────────────────────────────── */
-
-function renderNearby(b) {
-  const origin = [b.lon, b.lat];
-  const list = getState().businesses
-    .filter((x) => x.id !== b.id && x.category === b.category)
-    .map((x) => ({ b: x, d: haversine(origin, [x.lon, x.lat]) }))
-    .filter((x) => x.d < 2500)
-    .sort((a, z) => a.d - z.d)
-    .slice(0, 4);
-
-  if (!list.length) { $('#nearby').innerHTML = ''; return; }
-
-  $('#nearby').innerHTML = `
-    <h3 style="font-size:var(--fs-md)">ახლომდებარე</h3>
-    <div class="stack">
-      ${list.map(({ b: x, d }) => businessCard(x, { distanceM: d, compact: true })).join('')}
-    </div>`;
+function visibleItems() {
+  const items = biz.items ?? [];
+  return activeGroup ? items.filter((i) => (i.group || 'სხვა') === activeGroup) : items;
 }
 
-/* ─── პატარა რუკა ──────────────────────────────────────────── */
+function panel() {
+  if (activeTab === 'grid') return gridPanel();
+  if (activeTab === 'menu') return menuPanel();
+  if (activeTab === 'posts') return postsPanel();
+  return infoPanel();
+}
 
-async function mountMiniMap(b) {
-  const el = $('#mini-map');
-  if (!el || b.lat == null) return;
-  const { CityMap } = await import('../lib/map-core.js');
-  const mini = new CityMap(el, { hash: false, labels: false, interactive: true });
-  mini.addEventListener('ready', () => {
-    mini.setData([b]);
-    mini.map.jumpTo({ center: [b.lon, b.lat], zoom: 16 });
-    mini.select(b.id, { fly: false });
+function gridPanel() {
+  const items = visibleItems();
+  if (!items.length) {
+    return emptyState({
+      icon: 'image',
+      title: 'პროდუქტები ჯერ არ არის',
+      text: 'როცა ბიზნესი მენიუს დაამატებს, აქ გამოჩნდება.',
+    });
+  }
+  return `<div class="pf-grid">${items.map((it) => `
+    <a class="gcell" href="#" data-item="${attr(it.id)}"
+       style="--tint:var(--cat-${biz.category ?? 'public'})">
+      <span class="gcell-art">${emojiForCatalog(it.catalogId, emojiFor(biz))}</span>
+      <span class="gcell-price">${esc(price(it.price))}</span>
+      <span class="gcell-over">${esc(it.name?.ka ?? it.name ?? '')}</span>
+    </a>`).join('')}</div>`;
+}
+
+function menuPanel() {
+  const groups = menuGroups().filter((g) => !activeGroup || g.name === activeGroup);
+  if (!groups.length) return emptyState({ icon: 'tag', title: 'მენიუ ჯერ არ არის' });
+
+  return groups.map((g) => `
+    <section style="margin-bottom:var(--sp-5)">
+      <div class="eyebrow" style="margin-bottom:var(--sp-3)">${esc(g.name)}</div>
+      <div class="kv">
+        ${g.items.map((it) => `
+          <div class="kv-row" style="justify-content:space-between; gap:var(--sp-4)">
+            <div style="flex:1">
+              <div style="font-weight:600">${esc(it.name?.ka ?? it.name ?? '')}</div>
+              ${it.ingredients?.length
+    ? `<div class="dim" style="font-size:var(--fs-xs)">${it.ingredients.map(esc).join(' · ')}</div>` : ''}
+              ${it.attrs?.duration ? `<div class="dim" style="font-size:var(--fs-xs)">${it.attrs.duration} წუთი</div>` : ''}
+            </div>
+            <div class="tnum" style="white-space:nowrap; font-weight:700">
+              ${it.oldPrice ? `<s class="dim" style="font-weight:400">${esc(price(it.oldPrice))}</s> ` : ''}
+              ${esc(price(it.price))}${it.unit ? `<span class="dim" style="font-weight:400"> / ${esc(it.unit)}</span>` : ''}
+            </div>
+          </div>`).join('')}
+      </div>
+    </section>`).join('');
+}
+
+function postsPanel() {
+  return emptyState({
+    icon: 'image',
+    title: 'პოსტები ჯერ არ არის',
+    text: 'აქ გამოჩნდება ბიზნესის ფოტოები, ვიდეოები და სიახლეები — „ახლახან გამოვაცხვეთ", „დღეს 2+1".',
   });
 }
 
-/* ─── შეცდომის შეტყობინება ─────────────────────────────────── */
+function infoPanel() {
+  const rows = [];
+  if (biz.address) rows.push(kv('pin', esc(biz.address)));
+  for (const p of biz.phone ?? []) rows.push(kv('phone', `<a href="tel:${attr(p)}">${esc(fmtPhone(p))}</a>`));
+  if (biz.website) rows.push(kv('globe', `<a href="${attr(biz.website)}" target="_blank" rel="noopener nofollow">${esc(biz.website)}</a>`));
 
-function openReport(b) {
+  const attrs = (biz.attrList ?? []).map((a) => ATTRIBUTE_MAP[a]?.ka).filter(Boolean);
+
+  return `
+    ${rows.length ? `<div class="kv" style="margin-bottom:var(--sp-5)">${rows.join('')}</div>` : ''}
+
+    <section style="margin-bottom:var(--sp-5)">
+      <h4>სამუშაო საათები</h4>
+      ${biz.hours || biz.alwaysOpen
+    ? `<table class="hours-table">${weekTable(biz).map((d) => `
+          <tr data-today="${d.isToday}"><td>${esc(d.name)}</td><td>${esc(d.text)}</td></tr>`).join('')}</table>`
+    : '<p class="dim" style="font-size:var(--fs-sm)">უცნობია</p>'}
+    </section>
+
+    ${attrs.length ? `
+      <section style="margin-bottom:var(--sp-5)">
+        <h4>მახასიათებლები</h4>
+        <div class="row-wrap">${attrs.map((a) => `<span class="badge">${esc(a)}</span>`).join('')}</div>
+      </section>` : ''}
+
+    ${nearbySame()}
+
+    <p class="dim" style="font-size:var(--fs-xs); border-top:1px solid var(--line); padding-top:var(--sp-3)">
+      წყარო: ${esc({ osm: 'OpenStreetMap', owner: 'ბიზნესის მფლობელი', manual: 'რედაქცია' }[biz.source] ?? '—')}
+      ${biz.updatedAt ? ` · განახლდა ${esc(ago(biz.updatedAt))}` : ''}
+    </p>`;
+}
+
+const kv = (ic, html) => `<div class="kv-row">${icon(ic, { size: 17 })}<div>${html}</div></div>`;
+
+/** „სად კიდევ იყიდება ეს" — კატალოგის კავშირი მოქმედებაში */
+function nearbySame() {
+  const first = biz.items?.[0];
+  if (!first?.catalogId) return '';
+  const others = businessesWithCatalog(first.catalogId)
+    .filter((b) => b.id !== biz.id)
+    .map((b) => ({ b, d: haversine([biz.lon, biz.lat], [b.lon, b.lat]) }))
+    .sort((a, z) => a.d - z.d)
+    .slice(0, 6);
+  if (others.length < 2) return '';
+
+  return `
+    <section style="margin-bottom:var(--sp-5)">
+      <h4>${esc(first.name?.ka ?? first.name)} სხვაგანაც</h4>
+      <div class="post-rail" style="padding:0">
+        ${others.map(({ b, d }) => `
+          <a class="rail-item" href="/business.html?b=${encodeURIComponent(b.slug ?? b.id)}">
+            <div class="rail-name">${esc(b.name)}</div>
+            <div class="rail-sub">${esc(distance(d))}</div>
+          </a>`).join('')}
+      </div>
+    </section>`;
+}
+
+function buildDescription(b) {
+  return [b.name, catName(b.category), DISTRICT_MAP[b.district]?.ka, b.address,
+    'მენიუ, ფასები, საათები — თბილისი LIVE'].filter(Boolean).join(' · ').slice(0, 300);
+}
+
+/* ─── ინტერაქცია ───────────────────────────────────────────── */
+
+delegate(root, 'click', '[data-tab]', (e, btn) => {
+  activeTab = btn.dataset.tab;
+  for (const t of root.querySelectorAll('[data-tab]')) {
+    t.setAttribute('aria-selected', String(t.dataset.tab === activeTab));
+  }
+  $('#panel').innerHTML = panel();
+});
+
+delegate(root, 'click', '[data-group]', (e, btn) => {
+  activeGroup = btn.dataset.group || null;
+  for (const h of root.querySelectorAll('[data-group]')) {
+    h.setAttribute('aria-pressed', String((h.dataset.group || null) === activeGroup));
+  }
+  if (activeTab === 'posts' || activeTab === 'info') activeTab = 'grid';
+  for (const t of root.querySelectorAll('[data-tab]')) {
+    t.setAttribute('aria-selected', String(t.dataset.tab === activeTab));
+  }
+  $('#panel').innerHTML = panel();
+});
+
+delegate(root, 'click', '[data-act]', async (e, btn) => {
+  const act = btn.dataset.act;
+
+  if (act === 'follow') {
+    e.preventDefault();
+    const on = toggleFollow(biz.id);
+    btn.textContent = on ? 'გამოწერილი' : 'გაყოლა';
+    btn.classList.toggle('btn-primary', !on);
+    record('follow', { business: biz });
+    toast(on ? 'გამოწერილია' : 'გამოწერა გაუქმდა');
+  }
+
+  if (act === 'save') {
+    e.preventDefault();
+    const on = toggleSave(biz.id);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.innerHTML = icon('heart', { size: 18, fill: on });
+    record('save', { business: biz });
+  }
+
+  if (act === 'call') record('call', { business: biz });
+  if (act === 'route') record('route', { business: biz });
+
+  if (act === 'share') {
+    e.preventDefault();
+    const url = `${location.origin}/business.html?b=${biz.slug ?? biz.id}`;
+    if (navigator.share) navigator.share({ title: biz.name, url }).catch(() => {});
+    else { navigator.clipboard?.writeText(url); toast('ბმული დაკოპირდა'); }
+  }
+
+  if (act === 'report') { e.preventDefault(); openReport(); }
+});
+
+delegate(root, 'click', '[data-item]', (e, a) => {
+  e.preventDefault();
+  const it = (biz.items ?? []).find((x) => x.id === a.dataset.item);
+  if (!it) return;
+  record('view', { business: biz, catalogId: it.catalogId });
+  activeTab = 'menu';
+  activeGroup = it.group || null;
+  paint();
+});
+
+function openReport() {
   const dlg = $('#report-modal');
-  if (!dlg) return;
   dlg.showModal();
-
-  dlg.querySelector('form').onsubmit = async (e) => {
-    const action = e.submitter?.value;
-    if (action !== 'send') return;
-
-    const data = new FormData(e.target);
-    const payload = {
-      businessId: b.id,
-      field: data.get('field'),
-      note: String(data.get('note') ?? '').slice(0, 1000),
-    };
-
-    if (!payload.note.trim()) { toast('აღწერე რა არის არასწორი', 'error'); e.preventDefault(); return; }
-    if (!HAS_FIREBASE) { toast('Firebase არ არის კონფიგურირებული', 'error'); return; }
-
+  dlg.querySelector('form').onsubmit = async (ev) => {
+    if (ev.submitter?.value !== 'send') return;
+    const data = new FormData(ev.target);
+    const note = String(data.get('note') ?? '').trim();
+    if (!note) { toast('აღწერე რა არის არასწორი', 'error'); ev.preventDefault(); return; }
+    if (!HAS_FIREBASE) { toast('Firebase ჯერ არ არის დაყენებული', 'error'); return; }
     try {
       const { submitEdit } = await import('../lib/data/edits.js');
-      await submitEdit(payload);
+      await submitEdit({ businessId: biz.id, field: data.get('field'), note });
       toast('მადლობა — შევამოწმებთ', 'ok');
     } catch (err) {
-      console.error(err);
-      toast(err.code === 'permission-denied' ? 'ჯერ შედი ანგარიშში' : 'გაგზავნა ვერ მოხერხდა', 'error');
+      toast(err.code === 'permission-denied' ? 'ჯერ შედი ანგარიშში' : 'ვერ გაიგზავნა', 'error');
     }
   };
 }

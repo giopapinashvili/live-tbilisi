@@ -10,7 +10,7 @@ import { statusBadge } from '../lib/hours.js';
 import { price, toTetri } from '../lib/format.js';
 import { TIERS } from '../data/taxonomy.js';
 
-boot({ active: 'dashboard' });
+boot({ active: 'profile', chrome: 'header', footer: true });
 
 const root = $('#root');
 

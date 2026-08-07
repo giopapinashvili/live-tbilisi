@@ -16,7 +16,7 @@ import { searchAll } from '../lib/search.js';
 import { num } from '../lib/format.js';
 import { setTitle } from '../lib/seo.js';
 
-boot({ active: '', compact: true, canonical: false });
+boot({ active: 'search', canonical: false });
 
 const results = $('#results');
 const countBox = $('#result-count');

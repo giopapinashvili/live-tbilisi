@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#F6F1E9">
 
   <title>ბიზნესი — თბილისი LIVE</title>
-  <meta name="description" content="ბიზნესის სრული პროფილი: მისამართი, სამუშაო საათები, კონტაქტი, მენიუ და ფასები.">
+  <meta name="description" content="ბიზნესის პროფილი: მენიუ, ფასები, სამუშაო საათები, კონტაქტი და მისამართი.">
 
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,29 +23,9 @@
   </script>
 </head>
 
-<body class="page">
-  <header id="hdr"></header>
-
-  <main class="wrap" style="padding-block: var(--sp-5) var(--sp-8)">
-    <nav class="row" style="margin-bottom:var(--sp-4); font-size:var(--fs-sm)" id="crumbs"></nav>
-
-    <div class="biz-layout">
-      <article id="detail" class="biz-main"></article>
-
-      <aside class="biz-side">
-        <div class="card" style="overflow:hidden">
-          <div id="mini-map" style="height:260px; background:var(--map-bg)"></div>
-          <div class="card-body">
-            <a class="btn btn-block" id="open-in-map" href="/map.html">დიდ რუკაზე ნახვა</a>
-          </div>
-        </div>
-
-        <section id="nearby" style="margin-top:var(--sp-5)"></section>
-      </aside>
-    </div>
-  </main>
-
-  <footer id="ftr"></footer>
+<body>
+  <main class="pf" id="pf"></main>
+  <nav id="tabbar"></nav>
 
   <dialog class="modal" id="report-modal">
     <form method="dialog">
@@ -63,13 +43,14 @@
             <option value="hours">სამუშაო საათები</option>
             <option value="phone">ტელეფონი</option>
             <option value="address">მისამართი</option>
+            <option value="menu">მენიუ ან ფასები</option>
             <option value="closed">ბიზნესი დახურულია</option>
             <option value="other">სხვა</option>
           </select>
         </label>
         <label class="field">
           <span class="label">სწორი ინფორმაცია</span>
-          <textarea class="textarea" name="note" placeholder="მაგ: ორშაბათ–პარასკევი 10:00–20:00, შაბათს 11:00–18:00"></textarea>
+          <textarea class="textarea" name="note" placeholder="მაგ: ორშაბათ–პარასკევი 10:00–20:00"></textarea>
         </label>
       </div>
       <div class="modal-foot">

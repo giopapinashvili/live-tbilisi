@@ -7,7 +7,7 @@ import { loadCity, getState } from '../lib/store.js';
 import { dateLong } from '../lib/format.js';
 import { icon } from '../lib/icons.js';
 
-boot({ active: 'promos' });
+boot({ active: 'feed' });
 
 const results = $('#results');
 results.innerHTML = skeletonCards(4);
