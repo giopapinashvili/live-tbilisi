@@ -104,10 +104,44 @@ export function slugify(text) {
 }
 
 /**
- * ძებნის ნორმალიზაცია — ქართული და ლათინური ერთ სივრცეში.
- * „ცისქვილი" და „tsiskvili" ერთსა და იმავე გასაღებზე დაიყვანება.
+ * ინდექსის გასაღები — ქართული და ლათინური ერთ სტრიქონში.
+ * გამოიყენება მხოლოდ *ინდექსის ასაგებად* (ბიზნესის სახელი, პროდუქტი).
+ *
+ * ⚠ ამით query-ს ნუ დაამუშავებ. „ჰოთდოგი" გადაიქცევა
+ *   „ჰოთდოგი hotdogi"-ად და ასეთი გრძელი სტრიქონი ინდექსში
+ *   მთლიანად ვერასდროს მოიძებნება. query-სთვის იხ. searchVariants().
  */
 export function searchKey(text) {
   const raw = String(text ?? '').toLowerCase().trim();
   return `${raw} ${translit(raw)}`.replace(/\s+/g, ' ');
+}
+
+/**
+ * საძიებო ვარიანტები — რითი შეიძლება ეძებოს მომხმარებელმა.
+ * „ჰოთდოგი" → ['ჰოთდოგი', 'hotdogi']
+ * „hotdog"  → ['hotdog']
+ *
+ * დამთხვევა ჩაითვლება, თუ თუნდაც ერთი ვარიანტი გვხვდება ინდექსში.
+ */
+export function searchVariants(text) {
+  const raw = String(text ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
+  if (!raw) return [];
+  const tr = translit(raw);
+  return tr === raw ? [raw] : [raw, tr];
+}
+
+/** ერთი ვარიანტი მაინც ხვდება თუ არა ინდექსის გასაღებში */
+export function keyMatches(indexKey, variants) {
+  for (const v of variants) if (indexKey.includes(v)) return true;
+  return false;
+}
+
+/** სად იწყება პირველი დამთხვევა (-1 თუ არსად) — რანჟირებისთვის */
+export function matchAt(indexKey, variants) {
+  let best = -1;
+  for (const v of variants) {
+    const at = indexKey.indexOf(v);
+    if (at !== -1 && (best === -1 || at < best)) best = at;
+  }
+  return best;
 }

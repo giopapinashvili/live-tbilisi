@@ -11,7 +11,7 @@
 
 import { params } from './dom.js';
 import { OPEN_STATE } from './store.js';
-import { searchKey } from './format.js';
+import { searchKey, searchVariants, keyMatches } from './format.js';
 
 const listeners = new Set();
 
@@ -126,7 +126,7 @@ export function matches(b, f = filters) {
 
   if (f.q) {
     const key = b._key ?? searchKey(b.name);
-    if (!key.includes(searchKey(f.q))) return false;
+    if (!keyMatches(key, searchVariants(f.q))) return false;
   }
   return true;
 }

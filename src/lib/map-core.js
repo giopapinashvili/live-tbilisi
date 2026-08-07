@@ -20,7 +20,7 @@ import { installPins, iconImageExpression, categoryColorExpression } from './map
 import { toGeoJSON, hashId, getState } from './store.js';
 import { toMapExpression, filters } from './filters.js';
 import { currentTheme, onThemeChange } from './theme.js';
-import { searchKey } from './format.js';
+import { searchKey, searchVariants, keyMatches } from './format.js';
 
 const SRC = 'biz';
 const LYR = {
@@ -338,12 +338,12 @@ export class CityMap extends EventTarget {
     const { expression, needsTextFilter } = toMapExpression(f);
 
     if (needsTextFilter && f.q) {
-      const q = searchKey(f.q);
+      const variants = searchVariants(f.q);
       // extraIds — ბიზნესები, რომლებმაც პროდუქტით დაიმსახურეს ჩვენება
       // („შაურმა" ჩაწერისას ის საშაურმეებიც, რომელთა სახელშიც ეს სიტყვა არაა)
       const extraIds = this.textResolver?.(f.q) ?? null;
       const subset = (this._all ?? getState().businesses)
-        .filter((b) => extraIds?.has(b.id) || (b._key ?? searchKey(b.name)).includes(q));
+        .filter((b) => extraIds?.has(b.id) || keyMatches(b._key ?? searchKey(b.name), variants));
       this.map.getSource(SRC)?.setData(toGeoJSON(subset));
       this._textFiltered = true;
     } else if (this._textFiltered) {

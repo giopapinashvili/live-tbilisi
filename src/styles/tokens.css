@@ -62,20 +62,31 @@
   --maxw: 1360px;
   --maxw-text: 68ch;
 
-  /* ── კატეგორიების ფერები (რეჟიმისგან დამოუკიდებელი ბაზა) ──
-     12 ჰუე, საკმარისად დაშორებული, რომ რუკაზე გაირჩეს. */
-  --cat-food: #E2703A;
-  --cat-shopping: #3F7FC4;
-  --cat-health: #D8394F;
-  --cat-beauty: #B15CC4;
-  --cat-services: #2E9E86;
-  --cat-auto: #64748B;
-  --cat-education: #C9962B;
-  --cat-leisure: #E0568F;
-  --cat-hotel: #7159C9;
-  --cat-transport: #1FA6BF;
+  /* ── კატეგორიების ფერები ──
+     12 მკაფიო ჰუე, ოთხ ოჯახად დაჯგუფებული.
+     პინი პატარაა — ფერი უნდა კიოდეს, არა ჩურჩულებდეს.
+     გამონაკლისი მხოლოდ ინფრასტრუქტურაა: ის განზრახ ხმადაბალია,
+     რომ რუკაზე ის ჩანდეს, რასაც ხალხი ეძებს. */
+
+  /* თბილი — მოხმარება და დრო */
+  --cat-food: #FF6A1F;
+  --cat-education: #F5A600;
+  --cat-leisure: #FF3B84;
+
+  /* ცივი — ყიდვა და გადაადგილება */
+  --cat-shopping: #0E6BEF;
+  --cat-transport: #00B8D4;
+  --cat-hotel: #6C3BF5;
+
+  /* სხეული — ჯანმრთელობა და მოვლა */
+  --cat-health: #F5152F;
+  --cat-beauty: #CB2CE6;
+  --cat-services: #00B383;
+
+  /* ნეიტრალური — ინფრასტრუქტურა */
+  --cat-auto: #2F4B7C;
   --cat-public: #8C8577;
-  --cat-business: #9A6B3F;
+  --cat-business: #A3682E;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -184,19 +195,22 @@
   --grain-opacity: 0.05;
   --grain-blend: overlay;
 
-  /* კატეგორიების ფერები მუქ ფონზე ოდნავ უფრო ნათელი */
-  --cat-food: #F08A52;
-  --cat-shopping: #5E9BDC;
-  --cat-health: #EC5C70;
-  --cat-beauty: #C879DA;
-  --cat-services: #45BBA1;
-  --cat-auto: #8B99A9;
-  --cat-education: #E0B04A;
-  --cat-leisure: #F274A6;
-  --cat-hotel: #8E77E0;
-  --cat-transport: #3CC1D8;
+  /* მუქ ფონზე იგივე ჰუეები, აწეული სიკაშკაშით */
+  --cat-food: #FF8340;
+  --cat-education: #FFBA1F;
+  --cat-leisure: #FF5C9A;
+
+  --cat-shopping: #3B8BFF;
+  --cat-transport: #22D3EE;
+  --cat-hotel: #8B5CFF;
+
+  --cat-health: #FF4256;
+  --cat-beauty: #E052FF;
+  --cat-services: #14D8A0;
+
+  --cat-auto: #6E8FC7;
   --cat-public: #A79F91;
-  --cat-business: #B98955;
+  --cat-business: #C68B45;
 }
 
 /* მოძრაობის შემცირების პატივისცემა */

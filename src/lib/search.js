@@ -10,7 +10,7 @@
  */
 
 import { HAS_MEILI, MEILI } from './config.js';
-import { searchKey } from './format.js';
+import { searchKey, searchVariants, matchAt } from './format.js';
 import { getState, loadCity } from './store.js';
 import { loadItems, searchItems } from './items.js';
 import { CATEGORIES, DISTRICTS, SUBCATEGORY_MAP } from '../data/taxonomy.js';
@@ -40,36 +40,37 @@ const STATIC_ENTRIES = [
  * @returns {{businesses:Array, taxonomy:Array, term:string}}
  */
 export function searchLocal(term, { businessLimit = 8, taxonomyLimit = 5 } = {}) {
-  const q = searchKey(term).trim();
-  if (q.length < 2) return { businesses: [], taxonomy: [], term };
+  const variants = searchVariants(term);
+  if (!variants.length || variants[0].length < 2) return { businesses: [], taxonomy: [], term };
 
-  const taxonomy = rank(STATIC_ENTRIES, q, (e) => e.key).slice(0, taxonomyLimit);
+  const taxonomy = rank(STATIC_ENTRIES, variants, (e) => e.key).slice(0, taxonomyLimit);
 
   const { businesses } = getState();
-  const hits = rank(businesses, q, (b) => b._key ?? searchKey(b.name), (b) => scoreBusiness(b));
+  const hits = rank(businesses, variants, (b) => b._key ?? searchKey(b.name), (b) => scoreBusiness(b));
   return { businesses: hits.slice(0, businessLimit), taxonomy, term };
 }
 
 /** ყველა შედეგი — ძებნის გვერდისთვის */
 export function searchAll(term) {
-  const q = searchKey(term).trim();
-  if (q.length < 2) return [];
+  const variants = searchVariants(term);
+  if (!variants.length || variants[0].length < 2) return [];
   const { businesses } = getState();
-  return rank(businesses, q, (b) => b._key ?? searchKey(b.name), (b) => scoreBusiness(b));
+  return rank(businesses, variants, (b) => b._key ?? searchKey(b.name), (b) => scoreBusiness(b));
 }
 
 /**
  * რანჟირება: სახელის დასაწყისში დამთხვევა ყველაზე ძლიერია,
  * სიტყვის დასაწყისი — შემდეგი, ნებისმიერი შემთხვევა — სუსტი.
  */
-function rank(list, q, keyOf, bonusOf) {
+function rank(list, variants, keyOf, bonusOf) {
   const out = [];
   for (const item of list) {
     const key = keyOf(item);
     if (!key) continue;
-    const at = key.indexOf(q);
+    const at = matchAt(key, variants);
     if (at === -1) continue;
-    let score = at === 0 ? 100 : /(^|\s)$/.test(key[at - 1] ?? '') ? 60 : 25;
+    const prev = key[at - 1];
+    let score = at === 0 ? 100 : (prev === ' ' || prev === undefined) ? 60 : 25;
     score -= Math.min(at, 20) * 0.5;
     if (bonusOf) score += bonusOf(item);
     out.push({ item, score });
@@ -143,11 +144,13 @@ export async function search(term, onUpdate, opts = {}) {
 /** ხაზგასმა შედეგში — უსაფრთხოდ, ესკეიპის შემდეგ */
 export function highlight(text, term) {
   const t = String(text ?? '');
-  const q = term.trim();
-  if (q.length < 2) return escapeHtml(t);
-  const at = searchKey(t).indexOf(searchKey(q));
-  if (at === -1 || at >= t.length) return escapeHtml(t);
-  const end = Math.min(at + q.length, t.length);
+  const variants = searchVariants(term);
+  if (!variants.length || variants[0].length < 2) return escapeHtml(t);
+  // ხაზგასმა მხოლოდ ორიგინალ დამწერლობაზე — ტრანსლიტის პოზიცია
+  // ქართულ ტექსტში არ ემთხვევა (ერთი ასო რამდენიმე ლათინურს უდრის)
+  const at = t.toLowerCase().indexOf(variants[0]);
+  if (at === -1) return escapeHtml(t);
+  const end = at + variants[0].length;
   return `${escapeHtml(t.slice(0, at))}<mark>${escapeHtml(t.slice(at, end))}</mark>${escapeHtml(t.slice(end))}`;
 }
 

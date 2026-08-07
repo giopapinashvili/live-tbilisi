@@ -16,7 +16,7 @@ import {
   DISTRICTS, ATTRIBUTES, attributesFor, CITY,
 } from '../src/data/taxonomy.js';
 import { status, weekTable, tbilisiNow, WEEK_ORDER } from '../src/lib/hours.js';
-import { price, toTetri, slugify, searchKey, translit, haversine, distance } from '../src/lib/format.js';
+import { price, toTetri, slugify, searchKey, searchVariants, keyMatches, matchAt, translit, haversine, distance } from '../src/lib/format.js';
 import { encodeRow, decodeRow, normalize, computeTier, validateBusiness, attrsToList } from '../src/lib/schema.js';
 
 let pass = 0; let fail = 0;
@@ -174,6 +174,32 @@ test('searchKey ქართულსაც და ლათინურსა�
   const key = searchKey('ცისქვილი');
   assert.ok(key.includes('ცისქვილი'));
   assert.ok(key.includes('tsiskvili'));
+});
+
+
+test('searchVariants — query-ს ორივე დამწერლობა', () => {
+  assert.deepEqual(searchVariants('ჰოთდოგი'), ['ჰოთდოგი', 'hotdogi']);
+  assert.deepEqual(searchVariants('hotdog'), ['hotdog']);
+  assert.deepEqual(searchVariants(''), []);
+});
+
+test('ნაწილობრივი ძებნა მუშაობს (რეგრესია: „ჰოთდოგი" ვერაფერს პოულობდა)', () => {
+  // ინდექსი აიგება searchKey-თ, query — searchVariants-ით.
+  // ადრე ორივეს searchKey ამუშავებდა და query ხდებოდა „ჰოთდოგი hotdogi",
+  // რომელიც ინდექსში მთლიანად ვერასდროს იძებნებოდა.
+  const index = searchKey('ჰოთდოგი ყველით სოსისი ბულკა');
+  assert.ok(keyMatches(index, searchVariants('ჰოთდოგი')), 'ქართულად ვერ იპოვა');
+  assert.ok(keyMatches(index, searchVariants('hotdog')), 'ლათინურად ვერ იპოვა');
+  assert.ok(keyMatches(index, searchVariants('სოსისი')), 'ინგრედიენტით ვერ იპოვა');
+  assert.ok(keyMatches(index, searchVariants('ჰოთ')), 'ნაწილობრივ ვერ იპოვა');
+  assert.ok(!keyMatches(index, searchVariants('ცემენტი')), 'არასწორი დამთხვევა');
+});
+
+test('matchAt აბრუნებს პოზიციას რანჟირებისთვის', () => {
+  const index = searchKey('შაურმა ქათმის');
+  assert.equal(matchAt(index, searchVariants('შაურმა')), 0);
+  assert.ok(matchAt(index, searchVariants('ქათმის')) > 0);
+  assert.equal(matchAt(index, searchVariants('ცემენტი')), -1);
 });
 
 test('მანძილი', () => {

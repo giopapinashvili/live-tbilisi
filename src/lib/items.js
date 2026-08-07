@@ -9,7 +9,7 @@
  */
 
 import { BUNDLE_BASE } from './config.js';
-import { searchKey } from './format.js';
+import { searchKey, searchVariants, matchAt } from './format.js';
 import { getState, loadCity } from './store.js';
 
 const state = {
@@ -125,19 +125,17 @@ export function relatedTo(catalogId, limit = 5) {
  * @returns {{items:Array, businessIds:Set<string>, related:Array}}
  */
 export function searchItems(term, { limit = 40 } = {}) {
-  const q = searchKey(term).trim();
-  if (q.length < 2 || !state.items.length) {
-    return { items: [], businessIds: new Set(), related: [] };
+  const variants = searchVariants(term);
+  if (!variants.length || variants[0].length < 2 || !state.items.length) {
+    return { items: [], businessIds: new Set(), related: [], total: 0 };
   }
 
   const { byId } = getState();
   const scored = [];
 
   for (const it of state.items) {
-    const at = it._key.indexOf(q);
-    if (at === -1) continue;
-    const nameKey = searchKey(it.name);
-    const inName = nameKey.indexOf(q);
+    if (matchAt(it._key, variants) === -1) continue;
+    const inName = matchAt(searchKey(it.name), variants);
     // სახელში დამთხვევა ინგრედიენტზე ძლიერია
     let score = inName === 0 ? 100 : inName > 0 ? 70 : 30;
     const biz = byId.get(it.businessId);
