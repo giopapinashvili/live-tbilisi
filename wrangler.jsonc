@@ -14,6 +14,13 @@
   "name": "live-tbilisi",
   "compatibility_date": "2026-08-01",
 
+  // ბილდი აქედან ეშვება, deploy-ამდე. ეს განზრახ repo-შია და არა
+  // Cloudflare-ის პანელში: თუ დაშბორდის „Build command" ცარიელია,
+  // deploy მაინც იმუშავებს და კონფიგურაცია ერთ ადგილას რჩება.
+  "build": {
+    "command": "npm run build"
+  },
+
   "assets": {
     "directory": "./dist",
     // უცნობი მისამართი → 404.html (და არა ცარიელი პასუხი)
