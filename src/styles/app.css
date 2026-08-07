@@ -306,17 +306,19 @@ body.is-map.has-tabbar .tabbar { position: fixed; }
   font-variant-numeric: tabular-nums;
 }
 
-/* ავატარი პოსტში — ფერადი რგოლით, როგორც stories-ში */
+/* ავატარი პოსტში.
+   რგოლი მხოლოდ მაშინ ჩნდება, როცა ნამდვილად არის სთორი —
+   ის ინფორმაციაა, არა შემკულობა. თუ ყველას უდგას, აღარაფერს ნიშნავს. */
 a.post-avatar { text-decoration: none; font-size: 18px; }
 .story-ring-sm { position: relative; }
-.story-ring-sm::before {
+.story-ring-sm.has-story::before {
   content: '';
   position: absolute; inset: -4px;
   border-radius: 50%;
   background: var(--story-gradient);
   z-index: -1;
 }
-.story-ring-sm::after {
+.story-ring-sm.has-story::after {
   content: '';
   position: absolute; inset: -2px;
   border-radius: 50%;
@@ -464,14 +466,35 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
 .pf-head { display: flex; gap: var(--sp-4); align-items: flex-start; margin-bottom: var(--sp-4); }
 @media (min-width: 700px) { .pf-head { gap: var(--sp-6); } }
 
+/* პროფილის ავატარი.
+   ლურჯი რგოლი აქედან მოვხსენით: ის ყველას ედგა და შესაბამისად
+   არაფერს ნიშნავდა. რგოლი სთორის ნიშანია — ჩნდება მხოლოდ მაშინ,
+   როცა ახალი სთორი დევს, და გრადიენტია, არა ერთფერი. */
 .pf-avatar {
+  position: relative;
   width: 78px; height: 78px;
   flex: none;
   border-radius: 50%;
   display: grid; place-items: center;
   background: var(--surface-2);
-  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--ring, var(--accent));
 }
+.pf-avatar.has-story::before {
+  content: '';
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  background: var(--story-gradient);
+  z-index: -1;
+}
+.pf-avatar.has-story::after {
+  content: '';
+  position: absolute; inset: -3px;
+  border-radius: 50%;
+  background: var(--bg);
+  z-index: -1;
+}
+/* ნანახი სთორი — ინსტაგრამზეც ნაცრისფრდება */
+.pf-avatar.has-story.seen::before,
+.story-ring-sm.has-story.seen::before { background: var(--line-2, #C7C7C7); }
 @media (min-width: 700px) { .pf-avatar { width: 108px; height: 108px; } }
 .pf-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
@@ -984,3 +1007,183 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
 .cmt-like[aria-pressed='true'] { color: #FF3040; }
 .cmt-like[aria-pressed='true'] svg { fill: #FF3040; stroke: #FF3040; }
 .cmt-like.bump svg { animation: like-bump 320ms var(--ease-out); }
+
+/* ═══════════════════════════════════════════════════════════
+   შესვლა და რეგისტრაცია
+   ჰედერი და ტაბები აქ განზრახ არაა: ამ გვერდზე ერთი საქმეა
+   და ყველაფერი, რაც ყურადღებას იტაცებს, ხელს უშლის.
+   ═══════════════════════════════════════════════════════════ */
+
+.auth-page { background: var(--bg); }
+.auth-wrap {
+  min-height: 100dvh;
+  display: grid; place-items: center;
+  padding: var(--sp-5) var(--sp-4);
+}
+.auth-box { width: min(370px, 100%); display: grid; gap: var(--sp-3); }
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6) var(--sp-5);
+  display: grid; gap: var(--sp-4);
+  text-align: center;
+}
+.auth-switch {
+  padding: var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+}
+
+.auth-logo {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  margin-bottom: var(--sp-1);
+}
+.auth-logo span { color: var(--accent); }
+
+.auth-lede {
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.auth-form { display: grid; gap: var(--sp-3); text-align: left; }
+
+.auth-field { display: grid; gap: 6px; }
+.auth-field > span {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* პაროლის თვალი */
+.auth-pw { position: relative; display: block; }
+.auth-pw .input { padding-inline-end: 42px; width: 100%; }
+.auth-eye {
+  position: absolute; inset-block: 0; inset-inline-end: 4px;
+  width: 34px;
+  display: grid; place-items: center;
+  background: none; border: 0; cursor: pointer;
+  color: var(--ink-3);
+  border-radius: var(--r-sm);
+}
+.auth-eye:hover { color: var(--ink); }
+
+/* @ პრეფიქსი */
+.auth-at { position: relative; display: block; }
+.auth-at i {
+  position: absolute; inset-block: 0; inset-inline-start: 12px;
+  display: grid; place-items: center;
+  font-style: normal; font-weight: 600;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+.auth-at .input { padding-inline-start: 28px; width: 100%; }
+
+.auth-hint { font-size: var(--fs-xs); color: var(--ink-3); }
+.auth-hint.good { color: #1DA362; }
+.auth-hint.bad  { color: var(--danger, #E0245E); }
+
+.auth-err {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--danger, #E0245E);
+  background: color-mix(in srgb, var(--danger, #E0245E) 10%, transparent);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  text-align: start;
+}
+
+/* „ან" გამყოფი */
+.auth-or {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: var(--sp-3);
+  color: var(--ink-3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.auth-or::before, .auth-or::after {
+  content: ''; height: 1px; background: var(--line);
+}
+
+.auth-google {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+}
+
+.auth-link {
+  background: none; border: 0; padding: 0;
+  color: var(--accent);
+  font: inherit; font-size: var(--fs-sm); font-weight: 600;
+  cursor: pointer;
+}
+.auth-link:hover { text-decoration: underline; }
+
+.auth-legal {
+  font-size: 11px;
+  color: var(--ink-3);
+  text-align: center;
+  line-height: 1.5;
+  margin: var(--sp-2) 0 0;
+}
+
+/* ანგარიშის ტიპი */
+.auth-kinds { border: 0; padding: 0; margin: 0; display: grid; gap: var(--sp-2); }
+.auth-kinds legend {
+  font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2);
+  padding: 0; margin-bottom: 6px;
+}
+.auth-kind { display: block; cursor: pointer; }
+.auth-kind input { position: absolute; opacity: 0; pointer-events: none; }
+.auth-kind-box {
+  display: grid; gap: 2px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.auth-kind-box b { font-size: var(--fs-sm); font-weight: 650; }
+.auth-kind-box small { font-size: var(--fs-xs); color: var(--ink-3); }
+.auth-kind input:checked + .auth-kind-box {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.auth-kind input:focus-visible + .auth-kind-box { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* დადასტურების ეკრანი */
+.auth-done h1 { font-size: var(--fs-lg); margin: 0; }
+.auth-tick {
+  width: 60px; height: 60px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, #1DA362 14%, transparent);
+  color: #1DA362;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   @მონიშვნა და #ჰეშთეგი
+   ═══════════════════════════════════════════════════════════ */
+
+.rt-at, .rt-tag, .rt-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+.rt-at:hover, .rt-tag:hover, .rt-link:hover { text-decoration: underline; }
+
+.rt-more {
+  background: none; border: 0; padding: 0;
+  color: var(--ink-3);
+  font: inherit;
+  cursor: pointer;
+}
+.rt-more:hover { color: var(--ink-2); }

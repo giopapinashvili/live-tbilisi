@@ -141,7 +141,7 @@ function postCard(e) {
   return `
   <article class="post" data-id="${attr(b.id)}" data-post="${attr(e.id)}">
     <div class="post-head">
-      <a class="post-avatar story-ring-sm" href="${href}"
+      <a class="post-avatar story-ring-sm${b.hasStory ? ' has-story' : ''}" href="${href}"
          style="background:var(--cat-${b.category ?? 'public'})">${emojiFor(b)}</a>
       <span class="post-who">
         <a class="post-name" href="${href}">${esc(b.name)}</a>

@@ -40,7 +40,7 @@ function paint() {
 
   root.innerHTML = `
     <header class="pf-head">
-      <div class="pf-avatar" style="background:var(--surface-2); --ring:var(--accent)">
+      <div class="pf-avatar">
         ${user?.photoURL
     ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">`
     : icon('user', { size: 34 })}

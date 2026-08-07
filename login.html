@@ -13,23 +13,10 @@
     try { document.documentElement.dataset.theme = localStorage.getItem('tl.theme') || 'light'; } catch (e) {}
   </script>
 </head>
-<body class="page">
-  <header id="hdr"></header>
-  <main class="wrap" style="display:grid; place-items:center; min-height:70dvh">
-    <div class="card" style="width:min(400px,100%)">
-      <div class="card-body" style="display:grid; gap:var(--sp-4); text-align:center">
-        <div>
-          <h1 style="font-size:var(--fs-lg); margin-bottom:var(--sp-2)">შესვლა</h1>
-          <p class="muted" style="font-size:var(--fs-sm); margin:0">
-            ბიზნესის პროფილის სამართავად ან შეფასების დასატოვებლად.
-          </p>
-        </div>
-        <button class="btn btn-primary btn-lg btn-block" type="button" id="google">Google-ით შესვლა</button>
-        <p class="dim" style="font-size:var(--fs-xs); margin:0" id="note"></p>
-      </div>
-    </div>
+<body class="page auth-page">
+  <main class="auth-wrap">
+    <div class="auth-box" id="auth"></div>
   </main>
-  <footer id="ftr"></footer>
   <script type="module" src="/src/pages/login.js"></script>
 </body>
 </html>

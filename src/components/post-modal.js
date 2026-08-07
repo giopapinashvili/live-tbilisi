@@ -71,7 +71,7 @@ function paint() {
 
       <div class="pm-side">
         <header class="pm-head">
-          <a class="pm-avatar story-ring-sm" href="${href}"
+          <a class="pm-avatar story-ring-sm${business.hasStory ? ' has-story' : ''}" href="${href}"
              style="background:var(--cat-${business.category ?? 'public'})">${emoji ?? '📍'}</a>
           <div class="pm-who">
             <a class="pm-name" href="${href}">${esc(business.name)}</a>

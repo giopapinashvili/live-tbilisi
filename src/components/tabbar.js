@@ -15,7 +15,9 @@ export const TABS = [
   { id: 'feed', href: '/', label: 'ფიდი', icon: 'sparkle' },
   { id: 'map', href: '/map.html', label: 'რუკა', icon: 'map' },
   { id: 'search', href: '/search.html', label: 'ძებნა', icon: 'search' },
-  { id: 'saved', href: '/saved.html', label: 'შენახული', icon: 'heart' },
+  // შენახვა და მოწონება ორი სხვადასხვა რამაა — გულს პოსტს ვუკეთებთ,
+  // სანიშნეს კი ადგილს. ერთი ხატულა ორივეზე ხალხს აბნევს.
+  { id: 'saved', href: '/saved.html', label: 'შენახული', icon: 'bookmark' },
   { id: 'profile', href: '/profile.html', label: 'პროფილი', icon: 'user' },
 ];
 
