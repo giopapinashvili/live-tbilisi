@@ -51,6 +51,26 @@ t('mountFooter', ()=>{ mountFooter(); assert.ok(document.querySelector('#ftr').t
 t('mountFilterPanel + კლიკი', ()=>{ const host=document.querySelector('#app'); mountFilterPanel(host,{counts:new Map([['food',12]])}); assert.ok(host.querySelectorAll('.cat-item').length>=12); const btn=host.querySelector('[data-act="cat"][data-value="food"]'); btn.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true})); assert.ok(host.innerHTML.includes('აქტიური ფილტრები'),'ფილტრი არ გააქტიურდა'); });
 t('mountSearchBox', ()=>{ const host=document.createElement('div'); document.body.append(host); const box=mountSearchBox(host,{}); assert.ok(box.input); assert.ok(host.querySelector('.suggest')); });
 
+
+console.log('\nრეგრესია');
+const { readFileSync, readdirSync } = await import('node:fs');
+t('CityMap-ს კონტეინერი სელექტორის სტრიქონად არ გადაეცემა', () => {
+  // MapLibre კონტეინერს getElementById-ით ეძებს — "#map" მას ვერ პოულობს.
+  // map-core.js ახლა დამცავია, მაგრამ გამოძახების ადგილიც სუფთა უნდა იყოს.
+  const files = ['src/pages/map.js', 'src/pages/home.js', 'src/pages/business.js',
+                 'src/components/business-form.js'];
+  for (const f of files) {
+    const src = readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+    const bad = src.match(/new CityMap\(\s*['"`]/);
+    assert.equal(bad, null, `${f}: CityMap-ს სტრიქონი გადაეცემა, საჭიროა DOM ელემენტი`);
+  }
+});
+
+t('map-core კონტეინერს ორივე ფორმით იღებს', () => {
+  const src = readFileSync(new URL('../src/lib/map-core.js', import.meta.url), 'utf8');
+  assert.ok(src.includes('querySelector(container)'), 'დამცავი container-ის რეზოლუცია აკლია');
+});
+
 console.log('\n' + '─'.repeat(46));
 console.log(fail? `❌ ${fail} შეცდომა, ${pass} წარმატებული` : `✅ ყველა ${pass} შემოწმება გავიდა`);
 process.exitCode = fail?1:0;

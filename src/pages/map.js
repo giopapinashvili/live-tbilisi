@@ -25,7 +25,7 @@ $('#fab-theme').innerHTML = `${icon('sun')}`;
 $('#fab-filter-ico').innerHTML = icon('filter', { size: 16 });
 
 /* ─── რუკა ─────────────────────────────────────────────────── */
-const map = new CityMap('#map', { hash: true, padding: { top: 120, bottom: 80, left: 40, right: 40 } });
+const map = new CityMap($('#map'), { hash: true, padding: { top: 120, bottom: 80, left: 40, right: 40 } });
 
 const sheet = $('#sheet');
 const sheetBody = $('#sheet-body');

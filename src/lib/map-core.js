@@ -53,7 +53,11 @@ export class CityMap extends EventTarget {
     const start = this.opts.hash ? readHash() : null;
 
     this.map = new maplibregl.Map({
-      container,
+      // MapLibre სტრიქონს getElementById-ით კითხულობს, ანუ CSS სელექტორს
+      // („#map") არ იღებს და „Container not found"-ს აგდებს. აქ ორივეს ვუშვებთ.
+      container: typeof container === 'string'
+        ? (document.querySelector(container) ?? document.getElementById(container))
+        : container,
       style: buildStyle(currentTheme()),
       center: start?.center ?? CITY.center,
       zoom: start?.zoom ?? CITY.zoom,
