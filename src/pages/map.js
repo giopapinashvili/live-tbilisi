@@ -11,6 +11,7 @@ import { emptyState, EMPTY } from '../components/cards.js';
 import { icon } from '../lib/icons.js';
 import { toggleTheme } from '../lib/theme.js';
 import { loadCity, getState, getBusiness, stats } from '../lib/store.js';
+import { loadItems, searchItems } from '../lib/items.js';
 import { filters, readFromURL, setFilter, activeCount, resetFilters } from '../lib/filters.js';
 import { CATEGORIES } from '../data/taxonomy.js';
 import { num } from '../lib/format.js';
@@ -33,9 +34,14 @@ const countBox = $('#map-count');
 
 let panel;
 
+// ტექსტური ძებნა რუკაზე პროდუქტებსაც ითვალისწინებს:
+// „შაურმა" პოულობს იმ ადგილებსაც, რომელთა სახელშიც ეს სიტყვა არ არის
+map.textResolver = (term) => searchItems(term, { limit: 1000 }).businessIds;
+
 map.addEventListener('ready', async () => {
   const { businesses } = await loadCity();
   map.setData(businesses);
+  loadItems().then(() => { if (filters.q) { map.applyFilters(); updateCount(); } });
   map.applyFilters();
   updateCount();
   mountFilters();

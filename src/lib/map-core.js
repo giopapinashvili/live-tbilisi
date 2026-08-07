@@ -339,8 +339,11 @@ export class CityMap extends EventTarget {
 
     if (needsTextFilter && f.q) {
       const q = searchKey(f.q);
+      // extraIds — ბიზნესები, რომლებმაც პროდუქტით დაიმსახურეს ჩვენება
+      // („შაურმა" ჩაწერისას ის საშაურმეებიც, რომელთა სახელშიც ეს სიტყვა არაა)
+      const extraIds = this.textResolver?.(f.q) ?? null;
       const subset = (this._all ?? getState().businesses)
-        .filter((b) => (b._key ?? searchKey(b.name)).includes(q));
+        .filter((b) => extraIds?.has(b.id) || (b._key ?? searchKey(b.name)).includes(q));
       this.map.getSource(SRC)?.setData(toGeoJSON(subset));
       this._textFiltered = true;
     } else if (this._textFiltered) {

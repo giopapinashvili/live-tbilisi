@@ -14,7 +14,8 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { OSM_INDEX, DISTRICTS } from '../src/data/taxonomy.js';
+import { OSM_INDEX } from '../src/data/taxonomy.js';
+import { MENU_TEMPLATES, SUBCATEGORY_ALIAS, ITEM_COUNT } from '../src/data/menu-templates.js';
 import { slugify, searchKey } from '../src/lib/format.js';
 import { encodeRow, BUNDLE_FIELDS } from '../src/lib/schema.js';
 
@@ -112,6 +113,75 @@ const phonesOf = (t) => [t.phone, t['contact:phone']]
   .filter(Boolean).flatMap((p) => String(p).split(';'))
   .map((p) => p.replace(/\s+/g, '')).filter(Boolean).slice(0, 3);
 
+/* ─── მენიუს გენერაცია ─────────────────────────────────────────
+   დეტერმინირებული: ერთსა და იმავე ბიზნესს ყოველთვის ერთი და იგივე
+   მენიუ და ფასები ხვდება, რამდენჯერაც არ უნდა გავუშვათ სკრიპტი.
+   ───────────────────────────────────────────────────────────── */
+
+/** მარტივი seed-იანი გენერატორი (mulberry32) */
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const hash = (s) => {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+};
+
+/** ფასი დიაპაზონიდან, 10 თეთრზე დამრგვალებული */
+const pickPrice = (r, [min, max]) => Math.round((min + r() * (max - min)) / 10) * 10;
+
+function buildMenu(business) {
+  // მხოლოდ ზუსტი ქვეკატეგორია ან მისი აშკარა სინონიმი — fallback არ არსებობს
+  const key = business.subcategories
+    .map((s) => (MENU_TEMPLATES[s] ? s : SUBCATEGORY_ALIAS[s]))
+    .find((s) => s && MENU_TEMPLATES[s]);
+  const tpl = key && MENU_TEMPLATES[key];
+  if (!tpl) return [];
+
+  const r = rng(hash(business.id));
+  const want = Math.min(
+    tpl.length,
+    ITEM_COUNT.min + Math.floor(r() * (ITEM_COUNT.max - ITEM_COUNT.min + 1)),
+  );
+
+  // შემთხვევითი, მაგრამ სტაბილური შერჩევა
+  const pool = tpl.map((t, i) => ({ t, k: r(), i }))
+    .sort((a, b) => a.k - b.k)
+    .slice(0, want)
+    .sort((a, b) => a.i - b.i);           // ორიგინალი თანმიმდევრობა აღდგება
+
+  const groups = [...new Set(pool.map((x) => x.t.g))];
+
+  return pool.map(({ t }, order) => {
+    const price = pickPrice(r, t.p);
+    const onSale = r() < 0.08;            // ~8%-ს აქვს ფასდაკლება
+    return {
+      id: `i${order + 1}`,
+      name: { ka: t.n },
+      group: t.g,
+      groupOrder: groups.indexOf(t.g),
+      order,
+      catalogId: t.cat,                   // მომავალი კატალოგის ხისთვის
+      price,
+      oldPrice: onSale ? Math.round((price * 1.2) / 10) * 10 : null,
+      currency: 'GEL',
+      unit: t.u ?? '',
+      ingredients: t.ing ?? [],
+      attrs: t.d ? { duration: t.d } : {},
+      available: true,
+      demo: true,                         // ← უხილავი ნიშანი, წაშლისთვის
+    };
+  });
+}
+
 /* ─── გაშვება ──────────────────────────────────────────────── */
 
 const src = JSON.parse(await fs.readFile(IN, 'utf8'));
@@ -187,16 +257,36 @@ const write = async (rel, data) => {
   return (await fs.stat(file)).size;
 };
 
-const rows = businesses.map(encodeRow);
 let bytes = 0;
 
+// თითო ბიზნესის სრული დეტალები + მენიუ — ბიზნესის გვერდისთვის
+let withMenu = 0;
+const allItems = [];
+for (const b of businesses) {
+  const items = buildMenu(b);
+  if (items.length) {
+    withMenu++;
+    b.tier = Math.max(b.tier, 2);
+    // ძებნის ინდექსისთვის: [სახელი, catalogId, ბიზნესის id, ფასი, ჯგუფი, ინგრედიენტები, ერთეული]
+    for (const it of items) {
+      allItems.push([it.name.ka, it.catalogId, b.id, it.price, it.group, it.ingredients ?? [], it.unit ?? '']);
+    }
+  }
+  bytes += await write(`b/${b.id}.json`, { ...b, items, promos: [] });
+}
+
+// ძებნის ინდექსი — ცალკე ფაილი, იტვირთება მხოლოდ პირველ ძებნაზე
+bytes += await write('items.json', {
+  version,
+  fields: ['name', 'catalogId', 'businessId', 'price', 'group', 'ingredients', 'unit'],
+  count: allItems.length,
+  items: allItems,
+});
+
+// მწკრივები მენიუს შემდეგ იწერება — tier უკვე განახლებულია
+const rows = businesses.map(encodeRow);
 bytes += await write('all.json', { version, count: rows.length, rows });
 bytes += await write(`d/${DISTRICT}.json`, { version, district: DISTRICT, count: rows.length, rows });
-
-// თითო ბიზნესის სრული დეტალები — ბიზნესის გვერდისთვის
-for (const b of businesses) {
-  bytes += await write(`b/${b.id}.json`, { ...b, items: [], promos: [] });
-}
 
 bytes += await write('index.json', {
   version,
@@ -220,7 +310,8 @@ console.log(`   კატეგორიის გარეშე გამო�
 console.log(`   საათებით: ${businesses.filter((b) => b.hours || b.alwaysOpen).length}`);
 console.log(`   ტელეფონით: ${businesses.filter((b) => b.phone.length).length}`);
 console.log(`   მისამართით: ${businesses.filter((b) => b.address).length}`);
-console.log(`   tier 1: ${businesses.filter((b) => b.tier >= 1).length}`);
+console.log(`   მენიუთი: ${withMenu} ბიზნესი · ${allItems.length} პოზიცია`);
+console.log(`   tier 1+: ${businesses.filter((b) => b.tier >= 1).length} · tier 2: ${businesses.filter((b) => b.tier >= 2).length}`);
 console.log('\n   კატეგორიები:');
 for (const [k, v] of Object.entries(byCat).sort((a, b) => b[1] - a[1])) {
   console.log(`     ${k.padEnd(12)} ${v}`);

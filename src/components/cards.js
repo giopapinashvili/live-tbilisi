@@ -51,6 +51,40 @@ export function businessList(list, opts = {}) {
   return `<div class="grid-cards">${list.map((b) => businessCard(b, opts)).join('')}</div>`;
 }
 
+/* ─── პროდუქტის ბარათი ─────────────────────────────────────
+   ბარათი ნივთია, არა მაღაზია. ერთი ბიზნესი შეიძლება რამდენჯერმე
+   გამოჩნდეს — თითო პროდუქტზე თითო ბარათი. ეს განზრახია. */
+
+export function productCard(p) {
+  const b = p.business;
+  const st = b ? statusBadge(b) : null;
+  const cat = b && CATEGORY_MAP[b.category];
+  const href = b ? `/business.html?b=${encodeURIComponent(b.slug ?? b.id)}` : '#';
+  const gel = (v) => `${(v / 100).toFixed(2).replace(/\.00$/, '')} ₾`;
+
+  return `
+    <a class="card card-link prod-card" href="${href}">
+      <div class="prod-body">
+        <div class="prod-ico">${icon(cat?.icon ?? 'tag', { size: 20 })}</div>
+        <div class="prod-main">
+          <h3 class="prod-name">${esc(p.name)}</h3>
+          <div class="prod-where">${esc(b?.name ?? '')}${p.group ? ` · ${esc(p.group)}` : ''}</div>
+          ${p.ingredients?.length
+    ? `<div class="prod-ing">${p.ingredients.slice(0, 4).map(esc).join(' · ')}</div>` : ''}
+        </div>
+        <div class="prod-right">
+          <div class="prod-price">${esc(gel(p.price))}${p.unit ? `<span class="dim"> / ${esc(p.unit)}</span>` : ''}</div>
+          ${st ? `<span class="badge badge-${st.state}">${esc(st.short)}</span>` : ''}
+        </div>
+      </div>
+    </a>`;
+}
+
+export function productList(items) {
+  if (!items.length) return '';
+  return `<div class="prod-grid">${items.map(productCard).join('')}</div>`;
+}
+
 /* ─── კატეგორიის ფილა ──────────────────────────────────────── */
 
 export function categoryTile(cat, count = null) {

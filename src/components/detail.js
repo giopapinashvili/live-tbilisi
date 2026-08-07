@@ -180,10 +180,13 @@ function itemsBlock(b) {
                 <div style="flex:1">
                   <div style="font-weight:600">${esc(it.name?.ka ?? it.name ?? '')}</div>
                   ${it.descr?.ka ? `<div class="dim" style="font-size:var(--fs-xs)">${esc(it.descr.ka)}</div>` : ''}
+                  ${it.ingredients?.length
+    ? `<div class="dim" style="font-size:var(--fs-xs)">${it.ingredients.map(esc).join(' · ')}</div>` : ''}
+                  ${it.attrs?.duration ? `<div class="dim" style="font-size:var(--fs-xs)">${it.attrs.duration} წუთი</div>` : ''}
                 </div>
                 <div class="tnum" style="white-space:nowrap; font-weight:650">
                   ${it.oldPrice ? `<s class="dim" style="font-weight:400">${esc(price(it.oldPrice))}</s> ` : ''}
-                  ${esc(price(it.price))}
+                  ${esc(price(it.price))}${it.unit ? `<span class="dim" style="font-weight:400"> / ${esc(it.unit)}</span>` : ''}
                 </div>
               </div>`).join('')}
           </div>

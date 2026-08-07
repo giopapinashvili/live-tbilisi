@@ -12,6 +12,7 @@
 import { HAS_MEILI, MEILI } from './config.js';
 import { searchKey } from './format.js';
 import { getState, loadCity } from './store.js';
+import { loadItems, searchItems } from './items.js';
 import { CATEGORIES, DISTRICTS, SUBCATEGORY_MAP } from '../data/taxonomy.js';
 
 /* ─── სტატიკური ლექსიკონები (კატეგორია / უბანი) ───────────── */
@@ -115,9 +116,15 @@ export async function search(term, onUpdate, opts = {}) {
   const local = searchLocal(term, opts);
   onUpdate({ ...local, stage: 'local' });
 
-  if (!HAS_MEILI) return local;
+  // პროდუქტების ინდექსი ცალკე იტვირთება — შედეგი მეორე ტალღად მოდის
+  await loadItems();
+  const products = searchItems(term, { limit: opts.itemLimit ?? 6 });
+  const withItems = { ...local, products: products.items, related: products.related, stage: 'items' };
+  if (products.items.length) onUpdate(withItems);
+
+  if (!HAS_MEILI) return withItems;
   const remote = await searchRemote(term);
-  if (!remote) return local;
+  if (!remote) return withItems;
 
   const seen = new Set(local.businesses.map((b) => b.id));
   const extra = (remote.businesses ?? [])
@@ -125,9 +132,8 @@ export async function search(term, onUpdate, opts = {}) {
     .map((h) => getState().byId.get(h.id) ?? h);
 
   const merged = {
-    ...local,
+    ...withItems,
     businesses: [...local.businesses, ...extra],
-    items: remote.items ?? [],
     stage: 'remote',
   };
   onUpdate(merged);

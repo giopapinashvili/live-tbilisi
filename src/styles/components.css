@@ -458,3 +458,70 @@ dialog.modal::backdrop { background: rgba(10, 6, 2, 0.55); backdrop-filter: blur
   gap: var(--sp-4);
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
 }
+
+/* ─── პროდუქტის ბარათი ─────────────────────────────────────── */
+.prod-grid {
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+}
+.prod-card { border-radius: var(--r-md); }
+.prod-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+}
+.prod-ico {
+  width: 38px; height: 38px;
+  flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+.prod-main { flex: 1; min-width: 0; }
+.prod-name {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: 650;
+  line-height: 1.25;
+  margin: 0 0 2px;
+}
+.prod-where {
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.prod-ing {
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+  margin-top: 3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.prod-right {
+  flex: none;
+  text-align: right;
+  display: grid;
+  gap: var(--sp-2);
+  justify-items: end;
+}
+.prod-price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ─── დაკავშირებული სიტყვები ───────────────────────────────── */
+.related-bar {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-5);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.sec { margin-bottom: var(--sp-7); }
+.sec:last-of-type { margin-bottom: var(--sp-4); }

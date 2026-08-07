@@ -48,6 +48,7 @@ export function mountSearchBox(host, opts = {}) {
 
   let items = [];
   let cursor = -1;
+  let lastTerm = '';
 
   const close = () => {
     list.hidden = true;
@@ -57,19 +58,34 @@ export function mountSearchBox(host, opts = {}) {
   };
 
   const paint = (result) => {
+    const products = result.products ?? [];
     items = [
+      ...products.map((p) => ({ ...p, _type: 'product' })),
       ...result.taxonomy.map((t) => ({ ...t, _type: 'taxonomy' })),
       ...result.businesses.map((b) => ({ ...b, _type: 'business' })),
     ];
     if (!items.length) { close(); return; }
 
     const term = result.term;
+    lastTerm = term;
     const parts = [];
 
+    // პროდუქტები პირველი — ადამიანი ნივთს ეძებს, არა მაღაზიას
+    if (products.length) {
+      parts.push('<div class="suggest-group">პროდუქტები და კერძები</div>');
+      parts.push(...products.map((p, i) => suggestRow({
+        index: i,
+        swatch: `<span class="suggest-swatch" style="background:var(--accent-soft);color:var(--accent)">${icon('tag', { size: 14 })}</span>`,
+        name: highlight(p.name, term),
+        sub: `${esc(p.business?.name ?? '')} · ${(p.price / 100).toFixed(2)} ₾`,
+      })));
+    }
+
     if (result.taxonomy.length) {
+      const off0 = products.length;
       parts.push('<div class="suggest-group">კატეგორიები და უბნები</div>');
       parts.push(...result.taxonomy.map((t, i) => suggestRow({
-        index: i,
+        index: off0 + i,
         swatch: t.cat
           ? `<span class="suggest-swatch" style="background:var(--cat-${t.cat});color:#fff">${icon(CATEGORY_MAP[t.cat]?.icon ?? 'tag', { size: 14 })}</span>`
           : `<span class="suggest-swatch" style="background:var(--surface-2)">${icon('pin', { size: 14 })}</span>`,
@@ -79,7 +95,7 @@ export function mountSearchBox(host, opts = {}) {
     }
 
     if (result.businesses.length) {
-      const offset = result.taxonomy.length;
+      const offset = products.length + result.taxonomy.length;
       parts.push('<div class="suggest-group">ბიზნესები</div>');
       parts.push(...result.businesses.map((b, i) => {
         const st = statusBadge(b);
@@ -106,6 +122,13 @@ export function mountSearchBox(host, opts = {}) {
     const item = items[i];
     if (!item) return;
     close();
+    if (item._type === 'product') {
+      // პროდუქტზე დაჭერა → იმ ბიზნესზე გადაყვანა, სადაც ის იყიდება
+      const b = item.business;
+      onSelect?.({ kind: 'product', id: b?.id, slug: b?.slug, item });
+      if (!onSelect && b) location.href = `/business.html?b=${encodeURIComponent(b.slug ?? b.id)}`;
+      return;
+    }
     if (item._type === 'business') {
       input.value = item.name;
       onSelect?.({ kind: 'business', id: item.id, slug: item.slug, item });
