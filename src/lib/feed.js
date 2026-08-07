@@ -15,6 +15,7 @@
  * ბარათები თანდათან უკან იწევს.
  */
 
+import { BUNDLE_BASE } from './config.js';
 import { getState } from './store.js';
 import { itemsState, relatedTo } from './items.js';
 import { status } from './hours.js';
@@ -66,6 +67,25 @@ export function emojiFor(business) {
 
 export const emojiForCatalog = (catalogId, fallback) => EMOJI[catalogId] ?? fallback ?? '🏷️';
 
+/* ─── პოსტები ──────────────────────────────────────────────── */
+
+let postsPromise;
+
+/** ბიზნესების პოსტები. ცალკე ფაილია, ფიდთან ერთად იტვირთება. */
+export function loadPosts() {
+  postsPromise ??= (async () => {
+    try {
+      const res = await fetch(`${BUNDLE_BASE}/posts.json`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.posts ?? [];
+    } catch {
+      return [];
+    }
+  })();
+  return postsPromise;
+}
+
 /* ─── ნაკადის აწყობა ───────────────────────────────────────── */
 
 /**
@@ -85,10 +105,22 @@ export function buildFeed({ origin = null, limit = 24, posts = [] } = {}) {
   const open = withDistance.filter((x) => x.st.state === 'open' || x.st.state === 'closing');
   const rich = open.filter((x) => x.b.tier >= 2);
 
+  const byId = new Map(withDistance.map((x) => [x.b.id, x]));
   const feed = [];
 
-  // 1. ნამდვილი პოსტები — ყოველთვის პირველი
-  for (const p of posts) feed.push({ type: 'post', ...p });
+  // 1. პოსტები — ბიზნესთან და მანძილთან დაკავშირებული
+  for (const p of posts) {
+    const x = byId.get(p.businessId);
+    if (!x) continue;
+    feed.push({
+      type: 'post',
+      ...p,
+      business: x.b,
+      distance: x.d,
+      state: x.st,
+      emoji: emojiForCatalog(p.catalogId, emojiFor(x.b)),
+    });
+  }
 
   // 2. ღია ადგილები, სადაც მენიუც არის
   const sorted = (rich.length ? rich : open)
@@ -140,6 +172,7 @@ function headlineFor(b, st, items) {
 }
 
 /** „ცომეული ახლოს" ტიპის კრებული — ერთი catalogId, რამდენიმე ადგილი */
+// eslint-disable-next-line no-unused-vars
 function buildCollection(byBiz, origin, withDistance) {
   const { items } = itemsState();
   if (!items.length) return null;

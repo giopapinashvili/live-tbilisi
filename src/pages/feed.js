@@ -14,8 +14,13 @@ import { mountSearchBox } from '../components/searchbox.js';
 import { emptyState, EMPTY } from '../components/cards.js';
 import { loadCity, getState, stats } from '../lib/store.js';
 import { loadItems } from '../lib/items.js';
-import { buildFeed, buildStories, emojiFor } from '../lib/feed.js';
-import { rankFeed, record, toggleFollow, toggleSave, isFollowing, isSaved, maturity } from '../lib/taste.js';
+import { buildFeed, buildStories, emojiFor, loadPosts } from '../lib/feed.js';
+import {
+  rankFeed, record, toggleFollow, toggleSave, toggleLike,
+  isFollowing, isSaved, isLiked, maturity,
+} from '../lib/taste.js';
+import { KIND_LABEL } from '../data/post-templates.js';
+import { ago } from '../lib/format.js';
 import { distance, num, price } from '../lib/format.js';
 import { CATEGORIES, CATEGORY_MAP, DISTRICTS } from '../data/taxonomy.js';
 import { setCanonical } from '../lib/seo.js';
@@ -37,8 +42,11 @@ mountSearchBox($('#feed-search'), {
 
 feedHost.innerHTML = skeleton();
 
+let posts = [];
+
 (async () => {
-  await Promise.all([loadCity(), loadItems()]);
+  const [, , p] = await Promise.all([loadCity(), loadItems(), loadPosts()]);
+  posts = p ?? [];
   origin = await locate();
   render();
   renderStories();
@@ -63,7 +71,7 @@ function render() {
   const { businesses } = getState();
   if (!businesses.length) { feedHost.innerHTML = emptyState(EMPTY.noData); return; }
 
-  all = rankFeed(buildFeed({ origin, limit: 60 }));
+  all = rankFeed(buildFeed({ origin, limit: 60, posts }));
   paint();
 }
 
@@ -77,8 +85,72 @@ $('#more').addEventListener('click', () => { shown += PAGE; paint(); });
 /* ─── ბარათები ─────────────────────────────────────────────── */
 
 function card(e) {
+  if (e.type === 'post') return postCard(e);
   if (e.type === 'collection') return collectionCard(e);
   return placeCard(e);
+}
+
+/** ბიზნესის პოსტი — ინსტაგრამის ბარათი */
+function postCard(e) {
+  const b = e.business;
+  const href = `/business.html?b=${encodeURIComponent(b.slug ?? b.id)}`;
+  const tint = `--tint:var(--cat-${b.category ?? 'public'})`;
+  const liked = isLiked(e.id);
+  const likes = (e.likeCount ?? 0) + (liked ? 1 : 0);
+
+  return `
+  <article class="post" data-id="${attr(b.id)}" data-post="${attr(e.id)}">
+    <div class="post-head">
+      <a class="post-avatar story-ring-sm" href="${href}"
+         style="background:var(--cat-${b.category ?? 'public'})">${emojiFor(b)}</a>
+      <span class="post-who">
+        <a class="post-name" href="${href}">${esc(b.name)}</a>
+        <span class="post-meta">
+          ${esc(ago(e.createdAt))}${e.distance != null ? ` · ${esc(distance(e.distance))}` : ''}
+        </span>
+      </span>
+      <button class="btn btn-sm ${isFollowing(b.id) ? '' : 'btn-primary'}" type="button"
+              data-act="follow" data-id="${attr(b.id)}">
+        ${isFollowing(b.id) ? 'გამოწერილი' : 'გამოწერა'}
+      </button>
+    </div>
+
+    <div class="post-media" style="${tint}" data-act="dbl" data-post="${attr(e.id)}" data-id="${attr(b.id)}">
+      <span class="post-media-fill">${e.emoji}</span>
+      <span class="post-badge">${esc(KIND_LABEL[e.kind] ?? '')}</span>
+      <span class="heart-pop" aria-hidden="true">${icon('heart', { size: 88, fill: true })}</span>
+    </div>
+
+    <div class="post-body">
+      <div class="post-actions">
+        <button class="post-act act-like" type="button" data-act="like"
+                data-post="${attr(e.id)}" data-id="${attr(b.id)}" aria-pressed="${liked}"
+                aria-label="მოწონება">
+          ${icon('heart', { size: 24, fill: liked })}
+        </button>
+        <button class="post-act" type="button" data-act="comment" aria-label="კომენტარი">
+          ${icon('info', { size: 24 })}
+        </button>
+        <a class="post-act" href="/map.html?b=${encodeURIComponent(b.slug ?? b.id)}" aria-label="რუკაზე">
+          ${icon('pin', { size: 24 })}
+        </a>
+        <span class="spacer"></span>
+        <button class="post-act" type="button" data-act="save" data-id="${attr(b.id)}"
+                aria-pressed="${isSaved(b.id)}" aria-label="შენახვა">
+          ${icon('tag', { size: 22, fill: isSaved(b.id) })}
+        </button>
+      </div>
+
+      <div class="post-likes" data-likes="${attr(e.id)}">${num(likes)} მოწონება</div>
+
+      <p class="post-text">
+        <a class="post-name-inline" href="${href}">${esc(b.name)}</a>
+        ${esc(e.text)}
+      </p>
+
+      ${e.commentCount ? `<div class="post-comments">${num(e.commentCount)} კომენტარის ნახვა</div>` : ''}
+    </div>
+  </article>`;
 }
 
 function placeCard(e) {
@@ -225,24 +297,66 @@ function renderAside() {
 /* ─── ქმედებები ────────────────────────────────────────────── */
 
 delegate(feedHost, 'click', '[data-act]', (e, btn) => {
+  const act = btn.dataset.act;
+  if (act === 'dbl') return;                      // ორმაგი დაჭერა ცალკე მუშავდება
   e.preventDefault();
+
   const id = btn.dataset.id;
   const b = getState().byId.get(id);
 
-  if (btn.dataset.act === 'like') {
+  if (act === 'like') {
+    setLike(btn.dataset.post, id, !isLiked(btn.dataset.post));
+  }
+
+  if (act === 'save') {
     const on = toggleSave(id);
     btn.setAttribute('aria-pressed', String(on));
+    btn.innerHTML = icon('tag', { size: 22, fill: on });
     record(on ? 'save' : 'view', { business: b });
     if (on) toast('შენახულია');
   }
-  if (btn.dataset.act === 'follow') {
+
+  if (act === 'follow') {
     const on = toggleFollow(id);
-    btn.setAttribute('aria-pressed', String(on));
-    btn.querySelector('span').textContent = on ? 'გამოწერილი' : 'გამოწერა';
+    btn.textContent = on ? 'გამოწერილი' : 'გამოწერა';
+    btn.classList.toggle('btn-primary', !on);
     record('follow', { business: b });
-    if (on) toast(`${b?.name ?? ''} — გამოწერილია`);
   }
+
+  if (act === 'comment') toast('კომენტარები მალე დაემატება');
+
   renderAside();
+});
+
+/** მოწონება — ერთ ადგილას, რომ ღილაკიც და ორმაგი დაჭერაც ერთნაირად მუშაობდეს */
+function setLike(postId, businessId, want) {
+  if (!postId) return;
+  const nowLiked = isLiked(postId) === want ? want : toggleLike(postId);
+  const card = feedHost.querySelector(`[data-post="${CSS.escape(postId)}"]`);
+  if (!card) return;
+
+  const btn = card.querySelector('.act-like');
+  if (btn) {
+    btn.setAttribute('aria-pressed', String(nowLiked));
+    btn.innerHTML = icon('heart', { size: 24, fill: nowLiked });
+    btn.classList.toggle('bump', nowLiked);
+    setTimeout(() => btn.classList.remove('bump'), 350);
+  }
+
+  const entry = all.find((x) => x.id === postId);
+  const counter = card.querySelector('[data-likes]');
+  if (counter && entry) counter.textContent = `${num((entry.likeCount ?? 0) + (nowLiked ? 1 : 0))} მოწონება`;
+
+  record('like', { business: getState().byId.get(businessId), catalogId: entry?.catalogId });
+}
+
+/* ორმაგი დაჭერა სურათზე — ინსტაგრამის ჟესტი */
+delegate(feedHost, 'dblclick', '[data-act="dbl"]', (e, media) => {
+  e.preventDefault();
+  setLike(media.dataset.post, media.dataset.id, true);
+  media.classList.remove('pop');
+  void media.offsetWidth;
+  media.classList.add('pop');
 });
 
 // ბიზნესზე გადასვლა გემოვნებაში ჩაიწერება

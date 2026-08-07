@@ -7,8 +7,10 @@
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── ტიპოგრაფია ── */
-  --font-display: 'Noto Serif Georgian', 'Georgia', serif;
+  /* ── ტიპოგრაფია ──
+     სერიფი ამოღებულია. ინსტაგრამის ენა სუფთა sans-ია, მკვეთრი
+     კონტრასტით მსხვილსა და ჩვეულებრივ წონას შორის. */
+  --font-display: 'Noto Sans Georgian', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-body: 'Noto Sans Georgian', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', monospace;
 
@@ -31,11 +33,9 @@
   --sp-4: 1rem;     --sp-5: 1.5rem;   --sp-6: 2rem;
   --sp-7: 3rem;     --sp-8: 4rem;     --sp-9: 6rem;
 
-  /* ── ფორმა ──
-     მცირე რადიუსები განზრახია. 16px+ მომრგვალება ყველა შაბლონურ
-     საიტზეა; მკვეთრი კუთხე + ჰაერი უფრო „დაპროექტებულად" გამოიყურება. */
-  --r-xs: 3px;
-  --r-sm: 5px;
+  /* ── ფორმა ── */
+  --r-xs: 4px;
+  --r-sm: 6px;
   --r-md: 8px;
   --r-lg: 12px;
   --r-pill: 999px;
@@ -90,110 +90,115 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   ღია რეჟიმი — „დღე"
-   თბილი ქაღალდი, მელნისფერი ტექსტი, აგურის აქცენტი
+   ღია რეჟიმი
+   თეთრი ფონი, თხელი ნაცრისფერი ხაზები, ლურჯი აქცენტი
    ═══════════════════════════════════════════════════════════════ */
 :root,
 [data-theme='light'] {
   color-scheme: light;
 
-  --bg: #F6F1E9;
-  --bg-tint: #EFE7DA;
-  --surface: #FFFDFA;
-  --surface-2: #F2EADD;
-  --surface-3: #E7DCCB;
+  --bg: #FFFFFF;
+  --bg-tint: #FAFAFA;
+  --surface: #FFFFFF;
+  --surface-2: #FAFAFA;
+  --surface-3: #EFEFEF;
 
-  --ink: #1E1813;
-  --ink-2: #584E44;
-  --ink-3: #8A7D6F;
-  --ink-inv: #FDFBF7;
+  --ink: #000000;
+  --ink-2: #737373;
+  --ink-3: #8E8E8E;
+  --ink-inv: #FFFFFF;
 
-  --line: #E0D4C1;
-  --line-strong: #CDBCA3;
+  --line: #DBDBDB;
+  --line-strong: #DBDBDB;
 
-  /* აქცენტი — დამწვარი აგური */
-  --accent: #C0522A;
-  --accent-hover: #A94420;
-  --accent-soft: #F7E4D8;
+  /* აქცენტი — ლურჯი */
+  --accent: #0095F6;
+  --accent-hover: #1877F2;
+  --accent-soft: #E7F3FF;
   --accent-ink: #FFFFFF;
 
-  /* მეორადი — ღვინო */
-  --wine: #7A2740;
-  --wine-soft: #F6E2E7;
+  /* მოწონების წითელი */
+  --wine: #FF3040;
+  --wine-soft: #FFE8EA;
 
   /* სემანტიკური */
-  --open: #2C7A55;
-  --open-soft: #DFF0E6;
-  --closing: #B5820F;
-  --closing-soft: #FAEFD2;
-  --closed: #9B9186;
-  --closed-soft: #ECE5DB;
-  --danger: #B22D3A;
-  --danger-soft: #FAE2E4;
+  --open: #00A400;
+  --open-soft: #E6F6E6;
+  --closing: #C87F0A;
+  --closing-soft: #FCF3E3;
+  --closed: #8E8E8E;
+  --closed-soft: #F0F0F0;
+  --danger: #ED4956;
+  --danger-soft: #FDE9EB;
 
   /* რუკა */
-  --map-bg: #EFE9DE;
+  --map-bg: #F2F2F2;
   --map-theme: light;
-  --pin-stroke: #FFFDFA;
-  --pin-shadow: rgba(60, 40, 20, 0.32);
+  --pin-stroke: #FFFFFF;
+  --pin-shadow: rgba(0, 0, 0, 0.28);
 
-  --shadow-sm: 0 1px 2px rgba(60, 42, 24, 0.07), 0 1px 1px rgba(60, 42, 24, 0.04);
-  --shadow-md: 0 4px 14px rgba(60, 42, 24, 0.10), 0 1px 3px rgba(60, 42, 24, 0.06);
-  --shadow-lg: 0 18px 44px rgba(52, 36, 20, 0.16), 0 2px 8px rgba(52, 36, 20, 0.08);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 12px rgba(0, 0, 0, 0.09);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.14);
 
-  --grain-opacity: 0.035;
-  --grain-blend: multiply;
+  --grain-opacity: 0;
+  --grain-blend: normal;
+
+  /* Stories-ის რგოლი */
+  --story-gradient: linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5);
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   მუქი რეჟიმი — „ღამე"
-   თბილი შავი (არა ლურჯ-შავი), ქარვისფერი აქცენტი
+   მუქი რეჟიმი
+   სუფთა შავი ფონი, ნახშირისფერი ხაზები, იგივე ლურჯი
    ═══════════════════════════════════════════════════════════════ */
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #14110E;
-  --bg-tint: #191510;
-  --surface: #1E1915;
-  --surface-2: #26201A;
-  --surface-3: #322A22;
+  --bg: #000000;
+  --bg-tint: #0A0A0A;
+  --surface: #000000;
+  --surface-2: #1A1A1A;
+  --surface-3: #262626;
 
-  --ink: #F3EBE0;
-  --ink-2: #B4A697;
-  --ink-3: #7D7165;
-  --ink-inv: #14110E;
+  --ink: #F5F5F5;
+  --ink-2: #A8A8A8;
+  --ink-3: #737373;
+  --ink-inv: #000000;
 
-  --line: #322A22;
-  --line-strong: #453A2F;
+  --line: #262626;
+  --line-strong: #363636;
 
-  --accent: #E8813F;
-  --accent-hover: #F5934F;
-  --accent-soft: #33210F;
-  --accent-ink: #1A1109;
+  --accent: #0095F6;
+  --accent-hover: #3AACFF;
+  --accent-soft: #0B2233;
+  --accent-ink: #FFFFFF;
 
-  --wine: #D2647E;
-  --wine-soft: #331A21;
+  --wine: #FF3040;
+  --wine-soft: #331316;
 
-  --open: #4FBE8B;
-  --open-soft: #13291F;
-  --closing: #E3B450;
+  --open: #24C424;
+  --open-soft: #0F2A0F;
+  --closing: #E0A93A;
   --closing-soft: #2E2410;
-  --closed: #6E655B;
-  --closed-soft: #241F1A;
-  --danger: #E96A76;
-  --danger-soft: #331519;
+  --closed: #737373;
+  --closed-soft: #1A1A1A;
+  --danger: #FF5C6B;
+  --danger-soft: #33161A;
 
-  --map-bg: #14110E;
+  --map-bg: #000000;
   --map-theme: dark;
-  --pin-stroke: #14110E;
-  --pin-shadow: rgba(0, 0, 0, 0.6);
+  --pin-stroke: #000000;
+  --pin-shadow: rgba(0, 0, 0, 0.7);
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.62);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 2px 14px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 10px 36px rgba(0, 0, 0, 0.8);
 
-  --grain-opacity: 0.05;
-  --grain-blend: overlay;
+  --grain-opacity: 0;
+  --grain-blend: normal;
+
+  --story-gradient: linear-gradient(45deg, #FEDA75, #FA7E1E, #D62976, #962FBF, #4F5BD5);
 
   /* მუქ ფონზე იგივე ჰუეები, აწეული სიკაშკაშით */
   --cat-food: #FF8340;

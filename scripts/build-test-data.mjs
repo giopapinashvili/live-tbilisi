@@ -16,6 +16,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { OSM_INDEX } from '../src/data/taxonomy.js';
 import { MENU_TEMPLATES, SUBCATEGORY_ALIAS, ITEM_COUNT } from '../src/data/menu-templates.js';
+import { POST_TEMPLATES, POST_ALIAS, POST_COUNT } from '../src/data/post-templates.js';
 import { slugify, searchKey } from '../src/lib/format.js';
 import { encodeRow, BUNDLE_FIELDS } from '../src/lib/schema.js';
 
@@ -182,6 +183,46 @@ function buildMenu(business) {
   });
 }
 
+/* ─── პოსტების გენერაცია ───────────────────────────────────
+   მხოლოდ შერჩეულ ბიზნესებს — ფიდის საჩვენებლად საკმარისია და
+   ბანდლიც არ იბერება. */
+
+function buildPosts(business, items, seedOffset) {
+  const key = business.subcategories
+    .map((s) => (POST_TEMPLATES[s] ? s : POST_ALIAS[s]))
+    .find((s) => s && POST_TEMPLATES[s]);
+  const tpl = key && POST_TEMPLATES[key];
+  if (!tpl) return [];
+
+  const r = rng(hash(business.id) + seedOffset);
+  const want = Math.min(tpl.length, POST_COUNT.min + Math.floor(r() * (POST_COUNT.max - POST_COUNT.min + 1)));
+
+  const picked = tpl.map((t, i) => ({ t, k: r(), i }))
+    .sort((a, b) => a.k - b.k).slice(0, want);
+
+  const now = Date.now();
+  return picked.map(({ t }, n) => {
+    const item = items.length ? items[Math.floor(r() * items.length)] : null;
+    const text = t.text
+      .replace('{item}', item ? item.name.ka : 'ახალი პოზიცია')
+      .replace('{price}', item ? `${(item.price / 100).toFixed(2).replace(/\.00$/, '')} ₾` : '');
+    // ბოლო 5 დღეში გაფანტული
+    const createdAt = now - Math.floor(r() * 5 * 86400000) - n * 3600000;
+    return {
+      id: `p${n + 1}`,
+      businessId: business.id,
+      kind: t.kind,
+      text,
+      itemId: item?.id ?? null,
+      catalogId: item?.catalogId ?? null,
+      likeCount: Math.floor(r() * 40),
+      commentCount: Math.floor(r() * 8),
+      createdAt,
+      demo: true,
+    };
+  }).sort((a, b) => b.createdAt - a.createdAt);
+}
+
 /* ─── გაშვება ──────────────────────────────────────────────── */
 
 const src = JSON.parse(await fs.readFile(IN, 'utf8'));
@@ -259,9 +300,17 @@ const write = async (rel, data) => {
 
 let bytes = 0;
 
-// თითო ბიზნესის სრული დეტალები + მენიუ — ბიზნესის გვერდისთვის
+// ვინ მიიღებს პოსტებს — მხოლოდ ის ბიზნესები, რომლებსაც მენიუც აქვთ
+// და კონტაქტიც. 60 საკმარისია ფიდის საჩვენებლად.
+const POST_LIMIT = 60;
+let postSlots = POST_LIMIT;
+
+// თითო ბიზნესის სრული დეტალები + მენიუ + პოსტები
 let withMenu = 0;
+let withPosts = 0;
 const allItems = [];
+const allPosts = [];
+
 for (const b of businesses) {
   const items = buildMenu(b);
   if (items.length) {
@@ -272,8 +321,19 @@ for (const b of businesses) {
       allItems.push([it.name.ka, it.catalogId, b.id, it.price, it.group, it.ingredients ?? [], it.unit ?? '']);
     }
   }
-  bytes += await write(`b/${b.id}.json`, { ...b, items, promos: [] });
+
+  let posts = [];
+  if (postSlots > 0 && items.length && (b.phone.length || b.hours || b.alwaysOpen)) {
+    posts = buildPosts(b, items, 7);
+    if (posts.length) { postSlots--; withPosts++; allPosts.push(...posts); }
+  }
+
+  bytes += await write(`b/${b.id}.json`, { ...b, items, posts, promos: [] });
 }
+
+// ფიდის ნაკადი — ერთი ფაილი, ყველა პოსტი დროის მიხედვით
+allPosts.sort((a, z) => z.createdAt - a.createdAt);
+bytes += await write('posts.json', { version, count: allPosts.length, posts: allPosts });
 
 // ძებნის ინდექსი — ცალკე ფაილი, იტვირთება მხოლოდ პირველ ძებნაზე
 bytes += await write('items.json', {
@@ -311,6 +371,7 @@ console.log(`   საათებით: ${businesses.filter((b) => b.hours || 
 console.log(`   ტელეფონით: ${businesses.filter((b) => b.phone.length).length}`);
 console.log(`   მისამართით: ${businesses.filter((b) => b.address).length}`);
 console.log(`   მენიუთი: ${withMenu} ბიზნესი · ${allItems.length} პოზიცია`);
+console.log(`   პოსტებით: ${withPosts} ბიზნესი · ${allPosts.length} პოსტი`);
 console.log(`   tier 1+: ${businesses.filter((b) => b.tier >= 1).length} · tier 2: ${businesses.filter((b) => b.tier >= 2).length}`);
 console.log('\n   კატეგორიები:');
 for (const [k, v] of Object.entries(byCat).sort((a, b) => b[1] - a[1])) {
