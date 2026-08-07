@@ -30,7 +30,7 @@ import { statusBadge, weekTable } from '../lib/hours.js';
 import { price, phone as fmtPhone, num, distance, haversine, ago } from '../lib/format.js';
 import { catName, subName, CATEGORY_MAP, DISTRICT_MAP, ATTRIBUTE_MAP } from '../data/taxonomy.js';
 import { record, toggleFollow, toggleSave, isFollowing, isSaved } from '../lib/taste.js';
-import { openCommentSheet, starsView, commentCount } from '../components/comments.js';
+import { openCommentSheet, openRatingSheet, starsView, commentCount } from '../components/comments.js';
 import { displayRating, getComments } from '../lib/social.js';
 import { setTitle, setDescription, setCanonical, setJsonLd } from '../lib/seo.js';
 import { HAS_FIREBASE } from '../lib/config.js';
@@ -114,7 +114,7 @@ function paint() {
           <button class="pf-stat pf-stat-btn" type="button" data-act="rate">
             <b>${rate.avg ? rate.avg.toFixed(1) : '—'}</b><span>შეფასება</span>
           </button>
-          <button class="pf-stat pf-stat-btn" type="button" data-act="rate">
+          <button class="pf-stat pf-stat-btn" type="button" data-act="comments">
             <b>${num(commentCount(`b:${biz.id}`))}</b><span>კომენტარი</span>
           </button>
         </div>
@@ -226,6 +226,7 @@ function reviewsPanel() {
       <button class="btn btn-primary btn-sm" type="button" data-act="rate">
         ${rate.mine ? 'შეცვლა' : 'შეფასება'}
       </button>
+      <button class="btn btn-sm" type="button" data-act="comments">კომენტარი</button>
     </div>
 
     ${list.length ? `<div class="rev-list">${list.map((c) => `
@@ -412,9 +413,10 @@ delegate(root, 'click', '[data-act]', async (e, btn) => {
 
   if (act === 'report') { e.preventDefault(); openReport(); }
 
-  if (act === 'rate') {
+  if (act === 'rate') { e.preventDefault(); openRatingSheet(biz); }
+  if (act === 'comments') {
     e.preventDefault();
-    openCommentSheet({ threadId: `b:${biz.id}`, business: biz, title: biz.name });
+    openCommentSheet({ threadId: `b:${biz.id}`, business: biz });
   }
 });
 

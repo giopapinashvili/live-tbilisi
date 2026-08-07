@@ -1,104 +1,93 @@
 /**
- * კომენტარების ფურცელი და 5-ვარსკვლავიანი შეფასება.
- * ერთი კომპონენტი — ფიდიც და ბიზნესის გვერდიც მას იყენებს.
+ * კომენტარები და შეფასება — ორი ცალკე ფურცელი.
+ *
+ * ინსტაგრამზე კომენტარი და შეფასება ერთ ფანჯარაში არასდროსაა.
+ * ერთში აზრს წერ, მეორეში ვარსკვლავს აყენებ. აქაც ასეა.
  */
 
 import { esc, attr, el, toast } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
-import { ago } from '../lib/format.js';
+import { ago, num } from '../lib/format.js';
 import {
   getComments, addComment, deleteComment, commentCount,
   myRating, setRating, getRating, displayRating,
 } from '../lib/social.js';
 
-let sheet;
+/* ─────────────────────────────────────────────────────────────
+   კომენტარები
+   ───────────────────────────────────────────────────────────── */
 
-/** ქვედა ფურცელი — კომენტარები + შეფასება */
+let csheet;
+
 export function openCommentSheet({ threadId, business, title }) {
-  sheet ??= document.body.appendChild(el('div', { class: 'csheet', hidden: true }));
-  sheet.hidden = false;
-  sheet.dataset.open = 'true';
+  csheet ??= document.body.appendChild(el('div', { class: 'sheet2', hidden: true }));
+  csheet.hidden = false;
+  requestAnimationFrame(() => { csheet.dataset.open = 'true'; });
   document.body.style.overflow = 'hidden';
   paint();
 
   function paint() {
     const list = getComments(threadId);
-    const mine = myRating(business?.id);
-    const saved = getRating(business?.id);
 
-    sheet.innerHTML = `
-      <div class="csheet-backdrop" data-close></div>
-      <div class="csheet-panel" role="dialog" aria-label="კომენტარები">
-        <div class="csheet-grip"></div>
-        <div class="csheet-head">
-          <strong>${esc(title ?? business?.name ?? 'კომენტარები')}</strong>
-          <span class="spacer"></span>
-          <button class="btn btn-ghost btn-icon btn-sm" type="button" data-close
-                  aria-label="დახურვა">${icon('close', { size: 18 })}</button>
+    csheet.innerHTML = `
+      <div class="sheet2-backdrop" data-close></div>
+      <div class="sheet2-panel" role="dialog" aria-label="კომენტარები">
+        <div class="sheet2-grip"></div>
+        <div class="sheet2-head">
+          <button class="sheet2-x" type="button" data-close aria-label="დახურვა">
+            ${icon('close', { size: 20 })}
+          </button>
+          <strong>კომენტარები</strong>
+          <span class="sheet2-sub">${list.length ? num(list.length) : ''}</span>
         </div>
 
-        ${business ? `
-          <div class="csheet-rate">
-            <div class="rate-label">შენი შეფასება</div>
-            <div class="stars-input" role="radiogroup" aria-label="შეფასება">
-              ${[1, 2, 3, 4, 5].map((n) => `
-                <button class="star" type="button" role="radio" data-star="${n}"
-                        aria-checked="${mine === n}" aria-label="${n} ვარსკვლავი">
-                  ${icon('star', { size: 30, fill: mine != null && n <= mine })}
-                </button>`).join('')}
-            </div>
-            ${mine ? `<div class="rate-note">შენ შეაფასე ${mine}-ით${saved?.at ? ` · ${esc(ago(saved.at))}` : ''}</div>` : ''}
-          </div>` : ''}
-
-        <div class="csheet-list">
+        <div class="sheet2-body">
           ${list.length ? list.map(row).join('') : `
-            <p class="dim" style="text-align:center; padding:var(--sp-6) 0; font-size:var(--fs-sm)">
-              ჯერ არავის დაუწერია. იყავი პირველი.
-            </p>`}
+            <div class="cmt-empty">
+              <div class="cmt-empty-title">კომენტარი ჯერ არ არის</div>
+              <div class="dim">იყავი პირველი, ვინც აზრს დაწერს.</div>
+            </div>`}
         </div>
 
-        <form class="csheet-form">
-          <input class="input" name="text" placeholder="დაწერე კომენტარი…" autocomplete="off" maxlength="800">
-          <button class="btn btn-primary" type="submit">გაგზავნა</button>
+        <form class="sheet2-form">
+          <span class="cmt-avatar">${icon('user', { size: 16 })}</span>
+          <input class="cmt-input" name="text" autocomplete="off" maxlength="800"
+                 placeholder="დაწერე კომენტარი${business ? ` — ${esc(business.name)}` : ''}…">
+          <button class="cmt-send" type="submit" disabled>გამოქვეყნება</button>
         </form>
       </div>`;
 
-    sheet.querySelector('form').addEventListener('submit', async (e) => {
+    const form = csheet.querySelector('form');
+    const input = form.querySelector('.cmt-input');
+    const send = form.querySelector('.cmt-send');
+
+    input.addEventListener('input', () => { send.disabled = !input.value.trim(); });
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const input = e.target.text;
       const added = await addComment(threadId, input.value, { businessId: business?.id });
       if (!added) return;
-      input.value = '';
       paint();
       document.dispatchEvent(new CustomEvent('tl:comment', { detail: { threadId } }));
     });
+
+    setTimeout(() => input.focus(), 120);
   }
 
-  sheet.onclick = async (e) => {
+  csheet.onclick = (e) => {
     if (e.target.closest('[data-close]')) return close();
-
-    const star = e.target.closest('[data-star]');
-    if (star && business) {
-      const n = Number(star.dataset.star);
-      await setRating(business.id, n);
-      toast(`შეფასდა ${n} ვარსკვლავით`);
-      paint();
-      document.dispatchEvent(new CustomEvent('tl:rating', { detail: { businessId: business.id, stars: n } }));
-      return;
-    }
-
     const del = e.target.closest('[data-del]');
     if (del) { deleteComment(threadId, del.dataset.del); paint(); }
   };
 
   function close() {
-    sheet.dataset.open = 'false';
+    csheet.dataset.open = 'false';
     document.body.style.overflow = '';
-    setTimeout(() => { sheet.hidden = true; }, 250);
+    setTimeout(() => { csheet.hidden = true; }, 260);
   }
 
-  document.addEventListener('keydown', function esc2(ev) {
-    if (ev.key === 'Escape') { close(); document.removeEventListener('keydown', esc2); }
+  document.addEventListener('keydown', function onEsc(ev) {
+    if (ev.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
   });
 }
 
@@ -107,12 +96,89 @@ function row(c) {
     <div class="cmt">
       <span class="cmt-avatar">${icon('user', { size: 15 })}</span>
       <div class="cmt-body">
-        <div><b>${esc(c.author)}</b> <span class="dim">${esc(ago(c.createdAt))}</span></div>
-        <div class="cmt-text">${esc(c.text)}</div>
+        <div class="cmt-line"><b>${esc(c.author)}</b> ${esc(c.text)}</div>
+        <div class="cmt-meta">
+          <span>${esc(ago(c.createdAt))}</span>
+          <button type="button" class="cmt-reply">პასუხი</button>
+          ${c.mine ? `<button type="button" class="cmt-reply" data-del="${attr(c.id)}">წაშლა</button>` : ''}
+        </div>
       </div>
-      ${c.mine ? `<button class="btn btn-ghost btn-sm" type="button" data-del="${attr(c.id)}"
-                          aria-label="წაშლა">${icon('close', { size: 14 })}</button>` : ''}
+      <button class="cmt-like" type="button" aria-label="მოწონება">${icon('heart', { size: 13 })}</button>
     </div>`;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   შეფასება — ცალკე, პატარა ფანჯარა
+   ───────────────────────────────────────────────────────────── */
+
+let rsheet;
+
+export function openRatingSheet(business) {
+  rsheet ??= document.body.appendChild(el('div', { class: 'sheet2 sheet2-mini', hidden: true }));
+  rsheet.hidden = false;
+  requestAnimationFrame(() => { rsheet.dataset.open = 'true'; });
+  let pick = myRating(business.id) ?? 0;
+  paint();
+
+  function paint() {
+    const saved = getRating(business.id);
+    rsheet.innerHTML = `
+      <div class="sheet2-backdrop" data-close></div>
+      <div class="sheet2-panel" role="dialog" aria-label="შეფასება">
+        <div class="sheet2-grip"></div>
+        <div class="rate-box">
+          <div class="rate-title">${esc(business.name)}</div>
+          <div class="rate-sub">როგორ შეაფასებდი?</div>
+
+          <div class="stars-input" role="radiogroup">
+            ${[1, 2, 3, 4, 5].map((n) => `
+              <button class="star" type="button" role="radio" data-star="${n}"
+                      aria-checked="${pick === n}" aria-label="${n}">
+                ${icon('star', { size: 38, fill: n <= pick })}
+              </button>`).join('')}
+          </div>
+
+          <div class="rate-word">${['აირჩიე', 'ცუდი', 'საშუალო', 'კარგი', 'ძალიან კარგი', 'შესანიშნავი'][pick]}</div>
+
+          <textarea class="textarea rate-text" placeholder="დაწერე რამდენიმე სიტყვა (არასავალდებულო)"
+                    maxlength="600">${esc(saved?.text ?? '')}</textarea>
+
+          <div class="row" style="gap:var(--sp-2)">
+            <button class="btn" type="button" data-close style="flex:1">გაუქმება</button>
+            <button class="btn btn-primary" type="button" data-save style="flex:1"
+                    ${pick ? '' : 'disabled'}>შენახვა</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  rsheet.onclick = async (e) => {
+    if (e.target.closest('[data-close]')) return close();
+
+    const star = e.target.closest('[data-star]');
+    if (star) {
+      pick = Number(star.dataset.star);
+      const keep = rsheet.querySelector('.rate-text')?.value ?? '';
+      paint();
+      const t = rsheet.querySelector('.rate-text');
+      if (t) t.value = keep;
+      return;
+    }
+
+    if (e.target.closest('[data-save]')) {
+      const text = rsheet.querySelector('.rate-text')?.value ?? '';
+      await setRating(business.id, pick, text);
+      if (text.trim()) await addComment(`b:${business.id}`, text, { businessId: business.id });
+      toast(`შეფასდა ${pick} ვარსკვლავით`);
+      document.dispatchEvent(new CustomEvent('tl:rating', { detail: { businessId: business.id, stars: pick } }));
+      close();
+    }
+  };
+
+  function close() {
+    rsheet.dataset.open = 'false';
+    setTimeout(() => { rsheet.hidden = true; }, 260);
+  }
 }
 
 /** ვარსკვლავების ჩვენება — მხოლოდ საკითხავად */

@@ -92,6 +92,44 @@ function card(e) {
   return placeCard(e);
 }
 
+/**
+ * ქმედებების ზოლი — ინსტაგრამის თანმიმდევრობით:
+ * გული · კომენტარი · რეპოსტი · გაზიარება … შენახვა (მარჯვნივ)
+ *
+ * ადგილის ბარათს პოსტი არ აქვს, ამიტომ გული ბიზნესს ინახავს —
+ * ქცევა ერთნაირია, მონაცემი სხვა.
+ */
+function actionBar({ postId = null, businessId, liked, slug }) {
+  const on = postId ? liked : isSaved(businessId);
+  const act = postId ? 'like' : 'save';
+  const p = postId ? ` data-post="${attr(postId)}"` : '';
+
+  return `
+    <div class="post-actions">
+      <button class="post-act act-heart" type="button" data-act="${act}"${p}
+              data-id="${attr(businessId)}" aria-pressed="${on}" aria-label="მოწონება">
+        ${icon('heart', { size: 25, fill: on })}
+      </button>
+      <button class="post-act" type="button" data-act="comment"${p}
+              data-id="${attr(businessId)}" aria-label="კომენტარი">
+        ${icon('bubble', { size: 25 })}
+      </button>
+      <button class="post-act" type="button" data-act="repost"${p}
+              data-id="${attr(businessId)}" aria-label="რეპოსტი">
+        ${icon('repost', { size: 25 })}
+      </button>
+      <button class="post-act" type="button" data-act="share"
+              data-id="${attr(businessId)}" data-slug="${attr(slug)}" aria-label="გაზიარება">
+        ${icon('plane', { size: 25 })}
+      </button>
+      <span class="spacer"></span>
+      <button class="post-act" type="button" data-act="bookmark" data-id="${attr(businessId)}"
+              aria-pressed="${isSaved(businessId)}" aria-label="შენახვა">
+        ${icon('bookmark', { size: 24, fill: isSaved(businessId) })}
+      </button>
+    </div>`;
+}
+
 /** ბიზნესის პოსტი — ინსტაგრამის ბარათი */
 function postCard(e) {
   const b = e.business;
@@ -124,25 +162,7 @@ function postCard(e) {
     </div>
 
     <div class="post-body">
-      <div class="post-actions">
-        <button class="post-act act-heart act-like" type="button" data-act="like"
-                data-post="${attr(e.id)}" data-id="${attr(b.id)}" aria-pressed="${liked}"
-                aria-label="მოწონება">
-          ${icon('heart', { size: 24, fill: liked })}
-        </button>
-        <button class="post-act" type="button" data-act="comment"
-                data-post="${attr(e.id)}" data-id="${attr(b.id)}" aria-label="კომენტარი">
-          ${icon('info', { size: 24 })}
-        </button>
-        <a class="post-act" href="/map.html?b=${encodeURIComponent(b.slug ?? b.id)}" aria-label="რუკაზე">
-          ${icon('pin', { size: 24 })}
-        </a>
-        <span class="spacer"></span>
-        <button class="post-act" type="button" data-act="bookmark" data-id="${attr(b.id)}"
-                aria-pressed="${isSaved(b.id)}" aria-label="შენახვა">
-          ${icon('tag', { size: 22, fill: isSaved(b.id) })}
-        </button>
-      </div>
+      ${actionBar({ postId: e.id, businessId: b.id, liked, slug: b.slug ?? b.id })}
 
       <div class="post-likes" data-likes="${attr(e.id)}">${num(likes)} მოწონება</div>
 
@@ -197,21 +217,7 @@ function placeCard(e) {
       </div>` : ''}
 
     <div class="post-body">
-      <div class="post-actions">
-        <button class="post-act act-heart" type="button" data-act="save" data-id="${attr(b.id)}"
-                aria-pressed="${isSaved(b.id)}" aria-label="მოწონება">
-          ${icon('heart', { size: 24, fill: isSaved(b.id) })}
-        </button>
-        <button class="post-act" type="button" data-act="comment" data-id="${attr(b.id)}"
-                aria-label="კომენტარი">${icon('info', { size: 24 })}</button>
-        <a class="post-act" href="/map.html?b=${encodeURIComponent(b.slug ?? b.id)}"
-           aria-label="რუკაზე">${icon('pin', { size: 24 })}</a>
-        <span class="spacer"></span>
-        <button class="btn btn-sm ${isFollowing(b.id) ? '' : 'btn-primary'}" type="button"
-                data-act="follow" data-id="${attr(b.id)}">
-          ${isFollowing(b.id) ? 'გამოწერილი' : 'გამოწერა'}
-        </button>
-      </div>
+      ${actionBar({ businessId: b.id, liked: isSaved(b.id), slug: b.slug ?? b.id })}
       <p class="post-text">
         <b>${esc(b.name)}</b>
         ${b.address ? ` — ${esc(b.address)}` : ''}
@@ -322,18 +328,35 @@ delegate(feedHost, 'click', '[data-act]', (e, btn) => {
   if (act === 'save') {
     const on = toggleSave(id);
     btn.setAttribute('aria-pressed', String(on));
-    btn.innerHTML = icon('heart', { size: 24, fill: on });
+    btn.innerHTML = icon('heart', { size: 25, fill: on });
     btn.classList.add('bump');
     setTimeout(() => btn.classList.remove('bump'), 350);
     record(on ? 'save' : 'view', { business: b });
+    // შენახვის ღილაკიც განახლდეს — იგივე მდგომარეობაა
+    const card = btn.closest('.post');
+    const bm = card?.querySelector('[data-act="bookmark"]');
+    if (bm) { bm.setAttribute('aria-pressed', String(on)); bm.innerHTML = icon('bookmark', { size: 24, fill: on }); }
   }
 
   if (act === 'bookmark') {
     const on = toggleSave(id);
     btn.setAttribute('aria-pressed', String(on));
-    btn.innerHTML = icon('tag', { size: 22, fill: on });
+    btn.innerHTML = icon('bookmark', { size: 24, fill: on });
     record(on ? 'save' : 'view', { business: b });
     if (on) toast('შენახულია');
+  }
+
+  if (act === 'share') {
+    const url = `${location.origin}/business.html?b=${btn.dataset.slug}`;
+    if (navigator.share) navigator.share({ title: b?.name, url }).catch(() => {});
+    else { navigator.clipboard?.writeText(url); toast('ბმული დაკოპირდა'); }
+    record('view', { business: b });
+  }
+
+  if (act === 'repost') {
+    toggleSave(id);
+    toast('შენს პროფილში დაემატა');
+    record('save', { business: b });
   }
 
   if (act === 'follow') {
@@ -355,10 +378,10 @@ function setLike(postId, businessId, want) {
   const card = feedHost.querySelector(`[data-post="${CSS.escape(postId)}"]`);
   if (!card) return;
 
-  const btn = card.querySelector('.act-like');
+  const btn = card.querySelector('.act-heart');
   if (btn) {
     btn.setAttribute('aria-pressed', String(nowLiked));
-    btn.innerHTML = icon('heart', { size: 24, fill: nowLiked });
+    btn.innerHTML = icon('heart', { size: 25, fill: nowLiked });
     btn.classList.toggle('bump', nowLiked);
     setTimeout(() => btn.classList.remove('bump'), 350);
   }

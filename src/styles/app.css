@@ -352,12 +352,6 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
   70% { transform: scale(0.92); }
   100% { transform: scale(1); }
 }
-/* გული ყოველთვის წითელია, როცა დაჭერილია */
-.act-heart[aria-pressed='true'] { color: #FF3040; }
-.act-heart[aria-pressed='true'] svg { fill: #FF3040; stroke: #FF3040; }
-.act-heart.bump svg { animation: like-bump 340ms var(--ease-out); }
-.heart-pop { color: #FF3040; }
-.heart-pop svg { fill: #FF3040; stroke: none; }
 
 /* ─── უსასრულო სქროლი ──────────────────────────────────────── */
 .feed-sentinel {
@@ -373,104 +367,6 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
   animation: spin 700ms linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ─── კომენტარების ფურცელი ─────────────────────────────────── */
-.csheet { position: fixed; inset: 0; z-index: var(--z-modal); }
-.csheet-backdrop {
-  position: absolute; inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(3px);
-  opacity: 0;
-  transition: opacity var(--t-base) var(--ease);
-}
-.csheet[data-open='true'] .csheet-backdrop { opacity: 1; }
-
-.csheet-panel {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  max-height: 88dvh;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface);
-  border-top: var(--bw) solid var(--line-strong);
-  border-radius: 18px 18px 0 0;
-  transform: translateY(100%);
-  transition: transform var(--t-slow) var(--ease-out);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.csheet[data-open='true'] .csheet-panel { transform: translateY(0); }
-
-@media (min-width: 760px) {
-  .csheet-panel {
-    left: 50%; bottom: auto; top: 50%;
-    width: min(520px, calc(100vw - 3rem));
-    transform: translate(-50%, -45%) scale(0.96);
-    opacity: 0;
-    border-radius: var(--r-lg);
-    border: var(--bw) solid var(--line-strong);
-    box-shadow: var(--shadow-lg);
-  }
-  .csheet[data-open='true'] .csheet-panel {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-  .csheet-grip { display: none; }
-}
-
-.csheet-grip {
-  width: 38px; height: 4px;
-  border-radius: var(--r-pill);
-  background: var(--line-strong);
-  margin: var(--sp-2) auto var(--sp-1);
-}
-.csheet-head {
-  display: flex; align-items: center; gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-4);
-  border-bottom: var(--bw) solid var(--line);
-}
-.csheet-list { flex: 1; overflow-y: auto; padding: var(--sp-2) var(--sp-4); min-height: 120px; }
-.csheet-form {
-  display: flex; gap: var(--sp-2);
-  padding: var(--sp-3) var(--sp-4);
-  border-top: var(--bw) solid var(--line);
-  background: var(--surface);
-}
-.csheet-form .input { flex: 1; }
-
-/* შეფასების ვარსკვლავები */
-.csheet-rate {
-  padding: var(--sp-4);
-  border-bottom: var(--bw) solid var(--line);
-  text-align: center;
-  background: var(--bg-tint);
-}
-.rate-label { font-size: var(--fs-xs); color: var(--ink-3); margin-bottom: var(--sp-2); }
-.stars-input { display: inline-flex; gap: var(--sp-1); }
-.star {
-  background: none; border: 0; cursor: pointer; padding: 2px;
-  color: var(--line-strong);
-  transition: transform var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
-}
-.star:hover { transform: scale(1.18); }
-.star[aria-checked='true'],
-.stars-input:hover .star:hover,
-.stars-input .star:has(~ .star[aria-checked='true']) { color: #FFB800; }
-.star svg { fill: currentColor; stroke: none; }
-.star[aria-checked='false'] svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
-.rate-note { font-size: var(--fs-xs); color: var(--ink-2); margin-top: var(--sp-2); }
-
-/* კომენტარი */
-.cmt { display: flex; gap: var(--sp-3); padding: var(--sp-3) 0; align-items: flex-start; }
-.cmt + .cmt { border-top: 1px solid var(--line); }
-.cmt-avatar {
-  width: 30px; height: 30px; flex: none;
-  border-radius: 50%;
-  display: grid; place-items: center;
-  background: var(--surface-2);
-  color: var(--ink-3);
-}
-.cmt-body { flex: 1; min-width: 0; font-size: var(--fs-sm); }
-.cmt-text { margin-top: 2px; overflow-wrap: anywhere; }
 
 .post-comments {
   background: none; border: 0; padding: 0; cursor: pointer;
@@ -509,8 +405,6 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
   font-size: var(--fs-xs); font-weight: 600;
 }
 .post-act:hover { color: var(--accent); }
-.post-act[aria-pressed='true'] { color: var(--accent); }
-.post-act[aria-pressed='true'] svg { fill: currentColor; }
 .post-text { font-size: var(--fs-sm); line-height: 1.55; margin: 0; }
 .post-text b { font-weight: 700; }
 
@@ -733,3 +627,174 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
   opacity: 0;
   transition: opacity var(--t-fast) var(--ease);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   სოციალური ზოლი — ინსტაგრამის პროპორციები
+   ═══════════════════════════════════════════════════════════════ */
+
+.post-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px var(--sp-4) 6px;
+  color: var(--ink);
+}
+.post-act {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  display: inline-flex; align-items: center;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.post-act:hover { opacity: 0.55; }
+.post-act svg { fill: none; stroke: currentColor; stroke-width: 1.7; }
+
+/* გული — დაჭერისას მთლიანად წითელი, კონტურის გარეშე */
+.act-heart[aria-pressed='true'] { color: #FF3040; }
+.act-heart[aria-pressed='true'] svg { fill: #FF3040; stroke: #FF3040; }
+.act-heart[aria-pressed='true']:hover { opacity: 0.75; }
+.act-heart.bump svg { animation: like-bump 340ms var(--ease-out); }
+
+/* შენახვა — შევსებული, როცა აქტიურია */
+.post-act[data-act='bookmark'][aria-pressed='true'] svg { fill: currentColor; }
+
+.heart-pop { color: #FF3040; }
+.heart-pop svg { fill: #FF3040; stroke: none; }
+
+/* ═══════════════════════════════════════════════════════════════
+   ფურცელი — კომენტარები და შეფასება
+   ═══════════════════════════════════════════════════════════════ */
+
+.sheet2 { position: fixed; inset: 0; z-index: var(--z-modal); }
+.sheet2-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity var(--t-base) var(--ease);
+}
+.sheet2[data-open='true'] .sheet2-backdrop { opacity: 1; }
+
+.sheet2-panel {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 72dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-radius: 14px 14px 0 0;
+  transform: translateY(100%);
+  transition: transform 280ms var(--ease-out);
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow: hidden;
+}
+.sheet2[data-open='true'] .sheet2-panel { transform: translateY(0); }
+.sheet2-mini .sheet2-panel { height: auto; }
+
+@media (min-width: 760px) {
+  .sheet2-panel {
+    left: 50%; bottom: auto; top: 50%;
+    width: min(500px, calc(100vw - 3rem));
+    height: min(620px, 80dvh);
+    transform: translate(-50%, -46%);
+    opacity: 0;
+    border-radius: var(--r-lg);
+    border: var(--bw) solid var(--line);
+    box-shadow: var(--shadow-lg);
+  }
+  .sheet2[data-open='true'] .sheet2-panel { transform: translate(-50%, -50%); opacity: 1; }
+  .sheet2-mini .sheet2-panel { height: auto; }
+  .sheet2-grip { display: none; }
+}
+
+.sheet2-grip {
+  width: 36px; height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--line-strong);
+  margin: 8px auto 2px;
+  flex: none;
+}
+.sheet2-head {
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  gap: var(--sp-2);
+  padding: 12px var(--sp-4);
+  border-bottom: var(--bw) solid var(--line);
+  font-size: var(--fs-base);
+  flex: none;
+}
+.sheet2-x {
+  position: absolute; left: 10px;
+  background: none; border: 0; cursor: pointer;
+  color: var(--ink); padding: 6px;
+  display: inline-flex;
+}
+@media (min-width: 760px) { .sheet2-x { left: auto; right: 10px; } }
+.sheet2-sub { position: absolute; right: 16px; font-size: var(--fs-xs); color: var(--ink-3); }
+
+.sheet2-body { flex: 1; overflow-y: auto; padding: var(--sp-3) var(--sp-4); }
+
+.sheet2-form {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px var(--sp-4) 12px;
+  border-top: var(--bw) solid var(--line);
+  background: var(--surface);
+  flex: none;
+}
+.cmt-input {
+  flex: 1;
+  background: none;
+  border: 0;
+  outline: none;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  padding: 8px 0;
+}
+.cmt-input::placeholder { color: var(--ink-3); }
+.cmt-send {
+  background: none; border: 0; cursor: pointer;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  padding: 6px 2px;
+}
+.cmt-send[disabled] { opacity: 0.35; cursor: default; }
+
+/* ─── კომენტარი ────────────────────────────────────────────── */
+.cmt { display: flex; gap: 12px; padding: 10px 0; align-items: flex-start; }
+.cmt-avatar {
+  width: 32px; height: 32px; flex: none;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+.cmt-body { flex: 1; min-width: 0; }
+.cmt-line { font-size: var(--fs-sm); line-height: 1.4; overflow-wrap: anywhere; }
+.cmt-line b { font-weight: 650; margin-right: 5px; }
+.cmt-meta { display: flex; gap: 14px; margin-top: 5px; font-size: var(--fs-xs); color: var(--ink-3); }
+.cmt-reply {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font-size: var(--fs-xs); font-weight: 650; color: var(--ink-3);
+}
+.cmt-reply:hover { color: var(--ink-2); }
+.cmt-like { background: none; border: 0; cursor: pointer; color: var(--ink-3); padding: 4px; }
+.cmt-like:hover { color: #FF3040; }
+.cmt-empty { text-align: center; padding: var(--sp-8) var(--sp-4); }
+.cmt-empty-title { font-size: var(--fs-md); font-weight: 650; margin-bottom: 4px; }
+
+/* ─── შეფასების ფანჯარა ────────────────────────────────────── */
+.rate-box { padding: var(--sp-5) var(--sp-4) var(--sp-4); text-align: center; }
+.rate-title { font-size: var(--fs-md); font-weight: 700; }
+.rate-sub { font-size: var(--fs-sm); color: var(--ink-3); margin: 4px 0 var(--sp-4); }
+.stars-input { display: inline-flex; gap: 6px; margin-bottom: var(--sp-2); }
+.star {
+  background: none; border: 0; cursor: pointer; padding: 2px;
+  color: #FFB800;
+  transition: transform var(--t-fast) var(--ease);
+}
+.star:hover { transform: scale(1.15); }
+.star svg { fill: currentColor; stroke: none; }
+.star[aria-checked='false'] svg,
+.star svg[fill='none'] { fill: none; stroke: var(--line-strong); stroke-width: 1.5; }
+.rate-word { font-size: var(--fs-sm); font-weight: 650; margin-bottom: var(--sp-4); min-height: 1.2em; }
+.rate-text { margin-bottom: var(--sp-4); text-align: left; }
