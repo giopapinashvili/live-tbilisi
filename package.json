@@ -12,7 +12,8 @@
     "import:osm": "node scripts/osm-import.mjs",
     "build:bundles": "node scripts/build-bundles.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
-    "test": "node scripts/selftest.mjs && node scripts/domtest.mjs && node scripts/styletest.mjs"
+    "test": "node scripts/selftest.mjs && node scripts/domtest.mjs && node scripts/styletest.mjs",
+    "deploy": "npm run build && npx wrangler deploy"
   },
   "dependencies": {
     "firebase": "^11.1.0",
@@ -24,7 +25,8 @@
     "@maplibre/maplibre-gl-style-spec": "^20.4.0",
     "firebase-admin": "^13.0.2",
     "jsdom": "^25.0.1",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "wrangler": "^3.99.0"
   },
   "engines": {
     "node": ">=20"

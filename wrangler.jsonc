@@ -1,0 +1,28 @@
+{
+  // ────────────────────────────────────────────────────────────
+  //  Cloudflare Workers — სტატიკური ასეტები
+  //
+  //  ეს კონფიგი საჭიროა, თუ პროექტი Worker-ად შეიქმნა
+  //  (deploy command: `npx wrangler deploy`).
+  //  Pages-ის პროექტს ეს ფაილი არ სჭირდება — იქ მხოლოდ
+  //  build command `npm run build` და output `dist` ივსება.
+  //
+  //  სერვერული კოდი არ გვაქვს: `main` განზრახ არაა მითითებული,
+  //  ანუ Worker მხოლოდ სტატიკურ ფაილებს არიგებს.
+  // ────────────────────────────────────────────────────────────
+
+  "name": "live-tbilisi",
+  "compatibility_date": "2026-08-01",
+
+  "assets": {
+    "directory": "./dist",
+    // უცნობი მისამართი → 404.html (და არა ცარიელი პასუხი)
+    "not_found_handling": "404-page",
+    // /map → /map.html ავტომატურად
+    "html_handling": "auto-trailing-slash"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}

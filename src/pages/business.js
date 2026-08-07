@@ -37,7 +37,10 @@ async function init(key) {
 
   setTitle(`${b.name} — თბილისი LIVE`);
   setDescription(buildDescription(b));
-  setCanonical(`/b/${b.slug ?? b.id}`);
+  // canonical რეალურ, მომუშავე მისამართზე. /b/{slug} ლამაზი ფორმაა,
+  // მაგრამ rewrite-ზეა დამოკიდებული — თუ ჰოსტინგზე არ მუშაობს,
+  // canonical 404-ზე მიუთითებდა და SEO დაზიანდებოდა.
+  setCanonical(`/business.html?b=${b.slug ?? b.id}`);
   setJsonLd(jsonLd(b));
 
   renderCrumbs(b);
