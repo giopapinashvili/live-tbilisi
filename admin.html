@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ka" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F6F1E9">
+  <title>ადმინი — თბილისი LIVE</title>
+  <meta name="robots" content="noindex, nofollow">
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    try { document.documentElement.dataset.theme = localStorage.getItem('tl.theme') || 'light'; } catch (e) {}
+  </script>
+</head>
+
+<body class="page">
+  <header id="hdr"></header>
+
+  <main class="wrap" style="padding-block: var(--sp-5) var(--sp-8)">
+    <header style="margin-bottom:var(--sp-4)">
+      <p class="eyebrow">შიდა</p>
+      <h1 style="font-size:var(--fs-xl)">ადმინ-პანელი</h1>
+    </header>
+
+    <nav class="row-wrap" id="tabs" style="margin-bottom:var(--sp-5)">
+      <button class="chip" type="button" data-tab="businesses" aria-pressed="true">ბიზნესები</button>
+      <button class="chip" type="button" data-tab="edits" aria-pressed="false">შესწორებები</button>
+      <button class="chip" type="button" data-tab="claims" aria-pressed="false">მოთხოვნები</button>
+      <button class="chip" type="button" data-tab="tools" aria-pressed="false">ხელსაწყოები</button>
+    </nav>
+
+    <div id="root"></div>
+  </main>
+
+  <footer id="ftr"></footer>
+  <script type="module" src="/src/pages/admin.js"></script>
+</body>
+</html>

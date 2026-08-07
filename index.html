@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ka" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F6F1E9">
+
+  <title>თბილისი LIVE — ქალაქის ერთიანი რუკა</title>
+  <meta name="description" content="თბილისის ყველა ბიზნესი, სერვისი და ობიექტი ერთ რუკაზე: მენიუები, ფასები, სამუშაო საათები და ფასდაკლებები. იპოვე რაც გჭირდება, სადაც ხარ.">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="თბილისი LIVE — ქალაქის ერთიანი რუკა">
+  <meta property="og:description" content="თბილისის ყველა ბიზნესი ერთ რუკაზე.">
+  <meta property="og:locale" content="ka_GE">
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    try {
+      var t = localStorage.getItem('tl.theme')
+        || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = t;
+      if (t === 'dark') document.querySelector('meta[name=theme-color]').content = '#14110E';
+    } catch (e) {}
+  </script>
+</head>
+
+<body class="page">
+  <header id="hdr"></header>
+
+  <main>
+    <!-- ── HERO ─────────────────────────────────────────── -->
+    <section class="hero">
+      <div class="wrap hero-inner">
+        <p class="eyebrow hero-eyebrow">ერთი რუკა · მთელი ქალაქი</p>
+
+        <h1 class="hero-title">
+          თბილისი,<br>
+          <em>რომელიც ცხოვრობს</em>
+        </h1>
+
+        <p class="hero-lead">
+          საცხობი, აფთიაქი, სალონი, ავტოსერვისი, რესტორნის მენიუ, მაღაზიის ფასი —
+          ყველაფერი ერთ ადგილას. აღარ გჭირდება ათი საიტი.
+        </p>
+
+        <div id="hero-search" class="hero-search"></div>
+
+        <div class="hero-quick" id="hero-quick"></div>
+
+        <div class="hero-stats" id="hero-stats"></div>
+      </div>
+
+      <div class="hero-map" id="hero-map" aria-hidden="true"></div>
+      <div class="lattice hero-lattice" aria-hidden="true"></div>
+    </section>
+
+    <!-- ── კატეგორიები ──────────────────────────────────── -->
+    <section class="wrap" style="padding-block: var(--sp-7)">
+      <div class="sec-head">
+        <div>
+          <p class="eyebrow">ყველაფერი დალაგებულია</p>
+          <h2>რას ეძებ?</h2>
+        </div>
+        <a href="/map.html">რუკაზე ნახვა →</a>
+      </div>
+      <div class="cat-grid" id="cat-grid"></div>
+    </section>
+
+    <!-- ── უბნები ───────────────────────────────────────── -->
+    <section class="wrap" style="padding-block: var(--sp-6)">
+      <div class="sec-head">
+        <div>
+          <p class="eyebrow">უბნის მიხედვით</p>
+          <h2>სად ეძებ?</h2>
+        </div>
+      </div>
+      <div class="row-wrap" id="district-chips"></div>
+    </section>
+
+    <!-- ── როგორ მუშაობს ────────────────────────────────── -->
+    <section class="wrap" style="padding-block: var(--sp-7)">
+      <div class="how">
+        <article class="how-item">
+          <span class="how-num">01</span>
+          <h3>ერთი ძებნა</h3>
+          <p class="muted">დაწერე რასაც ეძებ — კატეგორია, ბიზნესის სახელი ან უბანი. სისტემა სამივეში ეძებს ერთდროულად.</p>
+        </article>
+        <article class="how-item">
+          <span class="how-num">02</span>
+          <h3>ზუსტი ფილტრი</h3>
+          <p class="muted">ღიაა ახლა, მიტანით, პარკინგით, ბარათით — ფილტრი მყისიერად მუშაობს, გვერდის გადატვირთვის გარეშე.</p>
+        </article>
+        <article class="how-item">
+          <span class="how-num">03</span>
+          <h3>სრული ინფორმაცია</h3>
+          <p class="muted">მენიუ, ფასები, საათები, კონტაქტი და აქციები — პირდაპირ ბიზნესის გვერდზე.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── ბიზნესებისთვის ───────────────────────────────── -->
+    <section class="wrap" style="padding-block: var(--sp-6) var(--sp-9)">
+      <div class="cta">
+        <div>
+          <p class="eyebrow">ბიზნესებისთვის</p>
+          <h2 style="margin-bottom:var(--sp-3)">შენი ადგილი ქალაქის რუკაზე</h2>
+          <p class="muted" style="margin-bottom:var(--sp-4)">
+            დაამატე მენიუ, ფასები, ფოტოები და აქციები. ნახე რამდენმა ადამიანმა მოძებნა შენი ბიზნესი.
+            უფასოდ.
+          </p>
+          <a class="btn btn-primary btn-lg" href="/dashboard.html">პროფილის აღება</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="ftr"></footer>
+
+  <script type="module" src="/src/pages/home.js"></script>
+</body>
+</html>

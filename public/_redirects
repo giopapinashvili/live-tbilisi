@@ -1,0 +1,9 @@
+# Cloudflare Pages — მოკლე, ადამიანური ბმულები
+# ფაზა 2-ში აქ SSR ჩაანაცვლებს (Pages Functions), რომ /b/* სერვერზე დარენდერდეს.
+
+/b/*    /business.html?b=:splat    200
+/c/*    /category.html?cat=:splat  200
+/map    /map.html                  200
+/search /search.html               200
+
+/*      /404.html                  404

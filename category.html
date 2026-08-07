@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ka" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F6F1E9">
+
+  <title>კატეგორიები — თბილისი LIVE</title>
+  <meta name="description" content="თბილისის ბიზნესები კატეგორიებისა და უბნების მიხედვით.">
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    try {
+      var t = localStorage.getItem('tl.theme')
+        || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = t;
+      if (t === 'dark') document.querySelector('meta[name=theme-color]').content = '#14110E';
+    } catch (e) {}
+  </script>
+</head>
+
+<body class="page">
+  <header id="hdr"></header>
+
+  <main class="wrap" style="padding-block: var(--sp-5) var(--sp-8)">
+    <nav class="row" style="margin-bottom:var(--sp-4); font-size:var(--fs-sm)" id="crumbs"></nav>
+
+    <header style="margin-bottom:var(--sp-5)">
+      <p class="eyebrow" id="page-eyebrow">კატალოგი</p>
+      <h1 id="page-title" style="font-size:var(--fs-xl)">კატეგორიები</h1>
+      <p class="muted" id="page-lead"></p>
+    </header>
+
+    <div class="cat-layout">
+      <aside class="cat-filters">
+        <div id="filter-host"></div>
+      </aside>
+
+      <div>
+        <div class="row-wrap" style="justify-content:space-between; margin-bottom:var(--sp-4)">
+          <span class="muted" id="result-count"></span>
+          <label class="row" style="gap:var(--sp-2)">
+            <span class="dim" style="font-size:var(--fs-sm)">დალაგება</span>
+            <select class="select" id="sort" style="min-height:34px; width:auto">
+              <option value="relevance">რელევანტურობა</option>
+              <option value="rating">რეიტინგი</option>
+              <option value="name">სახელი</option>
+            </select>
+          </label>
+        </div>
+
+        <div id="results"></div>
+
+        <div class="row" style="justify-content:center; margin-top:var(--sp-5)">
+          <button class="btn" type="button" id="more" hidden>მეტის ჩვენება</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer id="ftr"></footer>
+  <script type="module" src="/src/pages/category.js"></script>
+</body>
+</html>

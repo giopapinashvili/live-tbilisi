@@ -1,0 +1,30 @@
+node_modules/
+dist/
+.vite/
+
+# გარემოს ცვლადები — არასდროს ჩააკომიტო
+.env
+.env.local
+.env.*.local
+
+# Firebase
+.firebase/
+*-serviceAccount.json
+serviceAccount.json
+firebase-debug.log
+firestore-debug.log
+
+# ლოკალური ბანდლები და იმპორტის ქეში
+public/bundles/
+.cache/
+tmp/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# რედაქტორები
+.vscode/
+.idea/
+*.swp

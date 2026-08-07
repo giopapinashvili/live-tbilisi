@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ka" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F6F1E9">
+
+  <title>რუკა — თბილისი LIVE</title>
+  <meta name="description" content="თბილისის ინტერაქტიული რუკა: ყველა ბიზნესი კატეგორიების, სამუშაო საათებისა და მახასიათებლების ფილტრით.">
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    try {
+      var t = localStorage.getItem('tl.theme')
+        || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = t;
+      if (t === 'dark') document.querySelector('meta[name=theme-color]').content = '#14110E';
+    } catch (e) {}
+  </script>
+</head>
+
+<body class="is-map">
+  <header id="hdr"></header>
+
+  <div class="map-shell" id="shell">
+    <!-- გვერდითი ფილტრი (დესკტოპი) -->
+    <aside class="map-side">
+      <div class="side-head">
+        <h2>ფილტრი</h2>
+        <span class="spacer"></span>
+        <button class="btn btn-ghost btn-sm" type="button" id="side-reset">გასუფთავება</button>
+      </div>
+      <div class="side-body" id="filter-host"></div>
+      <div class="side-foot">
+        <button class="btn btn-block" type="button" id="fit-visible">ხედის მორგება</button>
+      </div>
+    </aside>
+
+    <!-- რუკა -->
+    <div class="map-canvas">
+      <div id="map" style="position:absolute; inset:0"></div>
+
+      <div class="map-top">
+        <div class="map-searchbar">
+          <div id="map-search"></div>
+        </div>
+        <div class="quickbar" id="quickbar"></div>
+      </div>
+
+      <div class="map-fabs">
+        <button class="fab" type="button" id="fab-locate" aria-label="ჩემი მდებარეობა" title="ჩემი მდებარეობა"></button>
+        <button class="fab" type="button" id="fab-reset" aria-label="ქალაქის ხედი" title="ქალაქის ხედი"></button>
+        <button class="fab" type="button" id="fab-theme" aria-label="დღე / ღამე" title="დღე / ღამე"></button>
+      </div>
+
+      <button class="btn filter-fab" type="button" id="fab-filter">
+        <span id="fab-filter-ico"></span>
+        ფილტრი
+        <span class="count" id="fab-filter-count" hidden>0</span>
+      </button>
+
+      <div class="map-count" id="map-count" hidden></div>
+    </div>
+
+    <!-- ფურცელი: ბიზნესის დეტალები / ფილტრი მობილურზე -->
+    <section class="sheet" id="sheet" data-open="false" aria-live="polite">
+      <div class="sheet-grip" id="sheet-grip" role="button" tabindex="0" aria-label="ფურცლის გახსნა/დახურვა"></div>
+      <div class="sheet-body" id="sheet-body"></div>
+    </section>
+  </div>
+
+  <script type="module" src="/src/pages/map.js"></script>
+</body>
+</html>

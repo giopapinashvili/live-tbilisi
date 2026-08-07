@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ka" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#F6F1E9">
+
+  <title>ბიზნესი — თბილისი LIVE</title>
+  <meta name="description" content="ბიზნესის სრული პროფილი: მისამართი, სამუშაო საათები, კონტაქტი, მენიუ და ფასები.">
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@400;500;600;700&family=Noto+Serif+Georgian:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    try {
+      var t = localStorage.getItem('tl.theme')
+        || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.dataset.theme = t;
+      if (t === 'dark') document.querySelector('meta[name=theme-color]').content = '#14110E';
+    } catch (e) {}
+  </script>
+</head>
+
+<body class="page">
+  <header id="hdr"></header>
+
+  <main class="wrap" style="padding-block: var(--sp-5) var(--sp-8)">
+    <nav class="row" style="margin-bottom:var(--sp-4); font-size:var(--fs-sm)" id="crumbs"></nav>
+
+    <div class="biz-layout">
+      <article id="detail" class="biz-main"></article>
+
+      <aside class="biz-side">
+        <div class="card" style="overflow:hidden">
+          <div id="mini-map" style="height:260px; background:var(--map-bg)"></div>
+          <div class="card-body">
+            <a class="btn btn-block" id="open-in-map" href="/map.html">დიდ რუკაზე ნახვა</a>
+          </div>
+        </div>
+
+        <section id="nearby" style="margin-top:var(--sp-5)"></section>
+      </aside>
+    </div>
+  </main>
+
+  <footer id="ftr"></footer>
+
+  <dialog class="modal" id="report-modal">
+    <form method="dialog">
+      <div class="modal-head">
+        <h3>შეცდომის შეტყობინება</h3>
+        <button class="btn btn-ghost btn-icon" value="cancel" aria-label="დახურვა">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="muted" style="font-size:var(--fs-sm)">
+          თუ ინფორმაცია არასწორია, მიგვითითე — შევამოწმებთ და გავასწორებთ.
+        </p>
+        <label class="field">
+          <span class="label">რა არის არასწორი?</span>
+          <select class="select" name="field">
+            <option value="hours">სამუშაო საათები</option>
+            <option value="phone">ტელეფონი</option>
+            <option value="address">მისამართი</option>
+            <option value="closed">ბიზნესი დახურულია</option>
+            <option value="other">სხვა</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">სწორი ინფორმაცია</span>
+          <textarea class="textarea" name="note" placeholder="მაგ: ორშაბათ–პარასკევი 10:00–20:00, შაბათს 11:00–18:00"></textarea>
+        </label>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" value="cancel" type="submit">გაუქმება</button>
+        <button class="btn btn-primary" value="send" type="submit">გაგზავნა</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/src/pages/business.js"></script>
+</body>
+</html>

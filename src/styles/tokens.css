@@ -1,0 +1,215 @@
+/* ═══════════════════════════════════════════════════════════════
+   თბილისი LIVE — დიზაინის ტოკენები
+
+   პალიტრა თბილია ორივე რეჟიმში. ეს განზრახია:
+   ცივი ნაცრისფერ-ლურჯი UI ყველგანაა, თბილი ქარვისფერ-ღვინისფერი —
+   არსად. ქალაქის ფერებია: აგური, გოგირდი, ხის აივანი, მტკვარი, ღვინო.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── ტიპოგრაფია ── */
+  --font-display: 'Noto Serif Georgian', 'Georgia', serif;
+  --font-body: 'Noto Sans Georgian', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', monospace;
+
+  /* მოდულური სკალა 1.25, mobile-first; clamp() ზრდის დესკტოპზე */
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.9375rem;
+  --fs-md: 1.0625rem;
+  --fs-lg: clamp(1.25rem, 1.1rem + 0.7vw, 1.5rem);
+  --fs-xl: clamp(1.6rem, 1.3rem + 1.5vw, 2.25rem);
+  --fs-2xl: clamp(2.1rem, 1.5rem + 3vw, 3.75rem);
+  --fs-3xl: clamp(2.6rem, 1.6rem + 5vw, 5.5rem);
+
+  --lh-tight: 1.08;
+  --lh-snug: 1.3;
+  --lh-body: 1.6;
+
+  /* ── სივრცე (4px ბადე) ── */
+  --sp-1: 0.25rem;  --sp-2: 0.5rem;   --sp-3: 0.75rem;
+  --sp-4: 1rem;     --sp-5: 1.5rem;   --sp-6: 2rem;
+  --sp-7: 3rem;     --sp-8: 4rem;     --sp-9: 6rem;
+
+  /* ── ფორმა ──
+     მცირე რადიუსები განზრახია. 16px+ მომრგვალება ყველა შაბლონურ
+     საიტზეა; მკვეთრი კუთხე + ჰაერი უფრო „დაპროექტებულად" გამოიყურება. */
+  --r-xs: 3px;
+  --r-sm: 5px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+
+  --bw: 1px;
+
+  /* ── მოძრაობა ── */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-fast: 120ms;
+  --t-base: 220ms;
+  --t-slow: 420ms;
+
+  /* ── ფენები ── */
+  --z-map: 1;
+  --z-map-ui: 10;
+  --z-sheet: 40;
+  --z-header: 50;
+  --z-modal: 80;
+  --z-toast: 90;
+
+  /* ── განლაგება ── */
+  --header-h: 60px;
+  --maxw: 1360px;
+  --maxw-text: 68ch;
+
+  /* ── კატეგორიების ფერები (რეჟიმისგან დამოუკიდებელი ბაზა) ──
+     12 ჰუე, საკმარისად დაშორებული, რომ რუკაზე გაირჩეს. */
+  --cat-food: #E2703A;
+  --cat-shopping: #3F7FC4;
+  --cat-health: #D8394F;
+  --cat-beauty: #B15CC4;
+  --cat-services: #2E9E86;
+  --cat-auto: #64748B;
+  --cat-education: #C9962B;
+  --cat-leisure: #E0568F;
+  --cat-hotel: #7159C9;
+  --cat-transport: #1FA6BF;
+  --cat-public: #8C8577;
+  --cat-business: #9A6B3F;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ღია რეჟიმი — „დღე"
+   თბილი ქაღალდი, მელნისფერი ტექსტი, აგურის აქცენტი
+   ═══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #F6F1E9;
+  --bg-tint: #EFE7DA;
+  --surface: #FFFDFA;
+  --surface-2: #F2EADD;
+  --surface-3: #E7DCCB;
+
+  --ink: #1E1813;
+  --ink-2: #584E44;
+  --ink-3: #8A7D6F;
+  --ink-inv: #FDFBF7;
+
+  --line: #E0D4C1;
+  --line-strong: #CDBCA3;
+
+  /* აქცენტი — დამწვარი აგური */
+  --accent: #C0522A;
+  --accent-hover: #A94420;
+  --accent-soft: #F7E4D8;
+  --accent-ink: #FFFFFF;
+
+  /* მეორადი — ღვინო */
+  --wine: #7A2740;
+  --wine-soft: #F6E2E7;
+
+  /* სემანტიკური */
+  --open: #2C7A55;
+  --open-soft: #DFF0E6;
+  --closing: #B5820F;
+  --closing-soft: #FAEFD2;
+  --closed: #9B9186;
+  --closed-soft: #ECE5DB;
+  --danger: #B22D3A;
+  --danger-soft: #FAE2E4;
+
+  /* რუკა */
+  --map-bg: #EFE9DE;
+  --map-theme: light;
+  --pin-stroke: #FFFDFA;
+  --pin-shadow: rgba(60, 40, 20, 0.32);
+
+  --shadow-sm: 0 1px 2px rgba(60, 42, 24, 0.07), 0 1px 1px rgba(60, 42, 24, 0.04);
+  --shadow-md: 0 4px 14px rgba(60, 42, 24, 0.10), 0 1px 3px rgba(60, 42, 24, 0.06);
+  --shadow-lg: 0 18px 44px rgba(52, 36, 20, 0.16), 0 2px 8px rgba(52, 36, 20, 0.08);
+
+  --grain-opacity: 0.035;
+  --grain-blend: multiply;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   მუქი რეჟიმი — „ღამე"
+   თბილი შავი (არა ლურჯ-შავი), ქარვისფერი აქცენტი
+   ═══════════════════════════════════════════════════════════════ */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #14110E;
+  --bg-tint: #191510;
+  --surface: #1E1915;
+  --surface-2: #26201A;
+  --surface-3: #322A22;
+
+  --ink: #F3EBE0;
+  --ink-2: #B4A697;
+  --ink-3: #7D7165;
+  --ink-inv: #14110E;
+
+  --line: #322A22;
+  --line-strong: #453A2F;
+
+  --accent: #E8813F;
+  --accent-hover: #F5934F;
+  --accent-soft: #33210F;
+  --accent-ink: #1A1109;
+
+  --wine: #D2647E;
+  --wine-soft: #331A21;
+
+  --open: #4FBE8B;
+  --open-soft: #13291F;
+  --closing: #E3B450;
+  --closing-soft: #2E2410;
+  --closed: #6E655B;
+  --closed-soft: #241F1A;
+  --danger: #E96A76;
+  --danger-soft: #331519;
+
+  --map-bg: #14110E;
+  --map-theme: dark;
+  --pin-stroke: #14110E;
+  --pin-shadow: rgba(0, 0, 0, 0.6);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.62);
+
+  --grain-opacity: 0.05;
+  --grain-blend: overlay;
+
+  /* კატეგორიების ფერები მუქ ფონზე ოდნავ უფრო ნათელი */
+  --cat-food: #F08A52;
+  --cat-shopping: #5E9BDC;
+  --cat-health: #EC5C70;
+  --cat-beauty: #C879DA;
+  --cat-services: #45BBA1;
+  --cat-auto: #8B99A9;
+  --cat-education: #E0B04A;
+  --cat-leisure: #F274A6;
+  --cat-hotel: #8E77E0;
+  --cat-transport: #3CC1D8;
+  --cat-public: #A79F91;
+  --cat-business: #B98955;
+}
+
+/* მოძრაობის შემცირების პატივისცემა */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-base: 0ms;
+    --t-slow: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

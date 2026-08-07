@@ -1,0 +1,333 @@
+/* ═══════════════════════════════════════════════════════════════
+   რუკის გვერდი
+   მობილურზე: რუკა მთელ ეკრანზე + ქვედა ფურცელი
+   დესკტოპზე: მარცხნივ ფილტრი, შუაში რუკა, მარჯვნივ დეტალები
+   ═══════════════════════════════════════════════════════════════ */
+
+.map-shell {
+  position: relative;
+  display: grid;
+  height: calc(100dvh - var(--header-h));
+  grid-template-columns: 1fr;
+  grid-template-areas: 'map';
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .map-shell {
+    grid-template-columns: 320px 1fr;
+    grid-template-areas: 'side map';
+  }
+  .map-shell.has-detail { grid-template-columns: 320px 1fr 380px; grid-template-areas: 'side map detail'; }
+}
+
+.map-canvas {
+  grid-area: map;
+  position: relative;
+  background: var(--map-bg);
+}
+.map-canvas .maplibregl-map { position: absolute; inset: 0; }
+
+/* ─── MapLibre-ის კონტროლების გადაწყობა თემაზე ─────────────── */
+.maplibregl-ctrl-group {
+  background: var(--surface) !important;
+  border: var(--bw) solid var(--line-strong) !important;
+  border-radius: var(--r-sm) !important;
+  box-shadow: var(--shadow-md) !important;
+  overflow: hidden;
+}
+.maplibregl-ctrl-group button {
+  width: 36px !important;
+  height: 36px !important;
+  background-color: transparent !important;
+}
+.maplibregl-ctrl-group button + button { border-top: var(--bw) solid var(--line) !important; }
+.maplibregl-ctrl-group button:hover { background-color: var(--surface-2) !important; }
+.maplibregl-ctrl-group button span { filter: var(--ctrl-filter, none); }
+[data-theme='dark'] .maplibregl-ctrl-group button span { filter: invert(1) brightness(1.7); }
+
+.maplibregl-ctrl-attrib {
+  background: color-mix(in oklab, var(--surface) 88%, transparent) !important;
+  color: var(--ink-3) !important;
+  font-size: 10px !important;
+  border-radius: var(--r-xs) 0 0 0 !important;
+}
+.maplibregl-ctrl-attrib a { color: var(--ink-2) !important; }
+.maplibregl-ctrl-scale {
+  background: color-mix(in oklab, var(--surface) 80%, transparent) !important;
+  border-color: var(--line-strong) !important;
+  color: var(--ink-2) !important;
+  border-radius: var(--r-xs);
+  font-size: 10px !important;
+}
+
+/* ─── ზედა ზოლი რუკაზე: ძებნა + სწრაფი ფილტრები ────────────── */
+.map-top {
+  position: absolute;
+  z-index: var(--z-map-ui);
+  top: var(--sp-3);
+  left: var(--sp-3);
+  right: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  pointer-events: none;
+}
+.map-top > * { pointer-events: auto; }
+@media (min-width: 1024px) {
+  .map-top { left: var(--sp-4); right: var(--sp-4); max-width: 640px; }
+}
+
+.map-searchbar {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+.map-searchbar .search { flex: 1; }
+.map-searchbar .search-input {
+  box-shadow: var(--shadow-md);
+  border-color: var(--line-strong);
+}
+
+/* სწრაფი კატეგორიების ლენტა — ჰორიზონტალური სქროლი */
+.quickbar {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+.quickbar::-webkit-scrollbar { display: none; }
+.quickbar .chip {
+  flex: none;
+  background: color-mix(in oklab, var(--surface) 94%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─── მარცხენა პანელი (დესკტოპი) ───────────────────────────── */
+.map-side {
+  grid-area: side;
+  display: none;
+  flex-direction: column;
+  background: var(--bg);
+  border-right: var(--bw) solid var(--line);
+  overflow: hidden;
+}
+@media (min-width: 1024px) { .map-side { display: flex; } }
+
+.side-head {
+  padding: var(--sp-4);
+  border-bottom: var(--bw) solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.side-head h2 { margin: 0; font-size: var(--fs-md); }
+.side-body { flex: 1; overflow-y: auto; padding: var(--sp-4); }
+.side-foot {
+  padding: var(--sp-3) var(--sp-4);
+  border-top: var(--bw) solid var(--line);
+  display: flex;
+  gap: var(--sp-2);
+  background: var(--surface);
+}
+
+/* ─── ფილტრის ჯგუფები ──────────────────────────────────────── */
+.fgroup { margin-bottom: var(--sp-5); }
+.fgroup-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--sp-3);
+}
+.fgroup-body { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+.cat-list { display: grid; gap: var(--sp-1); }
+.cat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  background: none;
+  border: 0;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+}
+.cat-item:hover { background: var(--surface-2); color: var(--ink); }
+.cat-item[aria-pressed='true'] { background: var(--surface-2); color: var(--ink); font-weight: 650; }
+.cat-swatch {
+  width: 28px; height: 28px;
+  border-radius: var(--r-sm);
+  display: grid; place-items: center;
+  color: #fff;
+  flex: none;
+  background: var(--dot, var(--ink-3));
+}
+.cat-count { margin-left: auto; font-size: var(--fs-xs); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+/* ─── ქვედა ფურცელი (მობილური) ─────────────────────────────── */
+.sheet {
+  position: absolute;
+  z-index: var(--z-sheet);
+  left: 0; right: 0; bottom: 0;
+  max-height: 82dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-top: var(--bw) solid var(--line-strong);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(100%);
+  transition: transform var(--t-slow) var(--ease-out);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.sheet[data-open='true'] { transform: translateY(0); }
+.sheet[data-open='peek'] { transform: translateY(calc(100% - 148px)); }
+
+.sheet-grip {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-2) 0 var(--sp-1);
+  cursor: grab;
+  touch-action: none;
+}
+.sheet-grip::before {
+  content: '';
+  width: 38px; height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--line-strong);
+}
+.sheet-body { overflow-y: auto; padding: 0 var(--sp-4) var(--sp-4); overscroll-behavior: contain; }
+
+@media (min-width: 1024px) {
+  .sheet {
+    grid-area: detail;
+    position: relative;
+    max-height: none;
+    height: 100%;
+    border-radius: 0;
+    border-top: 0;
+    border-left: var(--bw) solid var(--line);
+    transform: none;
+    box-shadow: none;
+    display: none;
+  }
+  .sheet[data-open='true'] { display: flex; }
+  .sheet-grip { display: none; }
+  .sheet-body { padding-top: var(--sp-4); }
+}
+
+/* ─── მცურავი ღილაკები ─────────────────────────────────────── */
+.map-fabs {
+  position: absolute;
+  z-index: var(--z-map-ui);
+  right: var(--sp-3);
+  bottom: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+@media (min-width: 1024px) { .map-fabs { bottom: var(--sp-6); right: 56px; } }
+
+.fab {
+  width: 42px; height: 42px;
+  display: grid; place-items: center;
+  background: var(--surface);
+  border: var(--bw) solid var(--line-strong);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  color: var(--ink-2);
+  transition: all var(--t-fast) var(--ease);
+}
+.fab:hover { color: var(--accent); border-color: var(--accent); }
+.fab[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+/* მობილურის ფილტრის ღილაკი */
+.filter-fab {
+  position: absolute;
+  z-index: var(--z-map-ui);
+  left: var(--sp-3);
+  bottom: 96px;
+  display: inline-flex;
+  gap: var(--sp-2);
+  box-shadow: var(--shadow-md);
+}
+@media (min-width: 1024px) { .filter-fab { display: none; } }
+.filter-fab .count {
+  min-width: 18px; height: 18px;
+  padding-inline: 4px;
+  display: grid; place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px; font-weight: 700;
+}
+
+/* ─── შედეგების მრიცხველი ──────────────────────────────────── */
+.map-count {
+  position: absolute;
+  z-index: var(--z-map-ui);
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: var(--sp-3);
+  padding: 0.3em 0.85em;
+  background: color-mix(in oklab, var(--surface) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border: var(--bw) solid var(--line-strong);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+@media (min-width: 1024px) { .map-count { bottom: var(--sp-4); } }
+
+/* ─── ბიზნესის ბარათი ფურცელში ─────────────────────────────── */
+.detail-hero {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  margin-bottom: var(--sp-4);
+}
+.detail-hero img { width: 100%; height: 100%; object-fit: cover; }
+.detail-title { font-size: var(--fs-lg); margin-bottom: var(--sp-2); }
+.detail-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-2); margin: var(--sp-4) 0; }
+.detail-actions .btn { flex-direction: column; gap: 4px; min-height: 62px; font-size: 11px; padding: var(--sp-2); }
+
+.kv { display: grid; gap: var(--sp-3); }
+.kv-row { display: flex; gap: var(--sp-3); align-items: flex-start; font-size: var(--fs-sm); }
+.kv-row .ico { color: var(--ink-3); flex: none; margin-top: 2px; }
+
+/* საათების ცხრილი */
+.hours-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.hours-table td { padding: 0.35em 0; border-bottom: 1px solid var(--line); }
+.hours-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.hours-table tr[data-today='true'] td { font-weight: 700; color: var(--ink); }
+
+/* ─── ლეგენდა ──────────────────────────────────────────────── */
+.legend {
+  display: flex; flex-wrap: wrap; gap: var(--sp-3);
+  font-size: var(--fs-xs); color: var(--ink-3);
+  padding: var(--sp-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-sm);
+}
+.legend-item { display: inline-flex; align-items: center; gap: 0.45em; }
+.legend-pin { width: 12px; height: 12px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); }
+.legend-dot { width: 11px; height: 11px; border-radius: 50%; border: 2.4px solid var(--ink-3); background: var(--surface); }

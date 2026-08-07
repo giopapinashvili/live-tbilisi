@@ -1,0 +1,206 @@
+/* ═══════════════════════════════════════════════════════════════
+   გვერდების განლაგებები
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── HERO ─────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 85% -10%, var(--accent-soft) 0%, transparent 55%),
+    var(--bg);
+  border-bottom: var(--bw) solid var(--line);
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  padding-block: var(--sp-7) var(--sp-8);
+  max-width: 780px;
+  margin-inline: 0;
+  padding-inline: var(--sp-4);
+}
+@media (min-width: 768px) {
+  .hero-inner { padding-block: var(--sp-9) var(--sp-8); padding-inline: var(--sp-6); }
+}
+@media (min-width: 1200px) {
+  .hero-inner { margin-inline: max(var(--sp-6), calc((100vw - var(--maxw)) / 2)); }
+}
+
+.hero-eyebrow { margin-bottom: var(--sp-3); }
+
+.hero-title {
+  font-size: var(--fs-3xl);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  margin-bottom: var(--sp-4);
+}
+/* კურსივი მეორე სტრიქონზე — ერთი ტიპოგრაფიული აქცენტი,
+   რომელიც სათაურს „დაწერილს" ხდის და არა „დაგენერირებულს" */
+.hero-title em {
+  font-style: italic;
+  color: var(--accent);
+  letter-spacing: -0.045em;
+}
+
+.hero-lead {
+  font-size: var(--fs-md);
+  color: var(--ink-2);
+  max-width: 46ch;
+  margin-bottom: var(--sp-5);
+}
+
+.hero-search { max-width: 560px; margin-bottom: var(--sp-4); position: relative; }
+.hero-quick { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-6); }
+
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+.stat-num {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-label { font-size: var(--fs-xs); color: var(--ink-3); letter-spacing: 0.04em; }
+
+/* რუკის ფრაგმენტი hero-ს ფონად — დესკტოპზე */
+.hero-map {
+  display: none;
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 46%;
+  z-index: 1;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 28%);
+  mask-image: linear-gradient(90deg, transparent, #000 28%);
+  opacity: 0.9;
+}
+@media (min-width: 1100px) { .hero-map { display: block; } }
+
+.hero-lattice { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; }
+
+/* ─── კატეგორიების ბადე ────────────────────────────────────── */
+.cat-grid {
+  display: grid;
+  gap: var(--sp-3);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+}
+.cat-tile .card-body { padding: var(--sp-3); }
+
+/* ─── „როგორ მუშაობს" ──────────────────────────────────────── */
+.how {
+  display: grid;
+  gap: var(--sp-5);
+  grid-template-columns: 1fr;
+  padding-block: var(--sp-5);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+@media (min-width: 800px) { .how { grid-template-columns: repeat(3, 1fr); gap: var(--sp-6); } }
+
+.how-item h3 { font-size: var(--fs-md); margin-bottom: var(--sp-2); }
+.how-item p { font-size: var(--fs-sm); margin: 0; }
+.how-num {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--accent);
+  letter-spacing: 0.16em;
+  margin-bottom: var(--sp-3);
+}
+
+/* ─── CTA ──────────────────────────────────────────────────── */
+.cta {
+  padding: var(--sp-6);
+  border: var(--bw) solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(90% 140% at 100% 0%, var(--accent-soft) 0%, transparent 60%),
+    var(--surface);
+}
+@media (min-width: 800px) { .cta { padding: var(--sp-7); } }
+.cta p { max-width: 52ch; }
+
+/* ─── ბიზნესის გვერდი ──────────────────────────────────────── */
+.biz-layout { display: grid; gap: var(--sp-6); }
+@media (min-width: 940px) {
+  .biz-layout { grid-template-columns: minmax(0, 1fr) 340px; align-items: start; }
+  .biz-side { position: sticky; top: calc(var(--header-h) + var(--sp-4)); }
+}
+.biz-main { min-width: 0; }
+
+/* ─── კატეგორიის გვერდი ────────────────────────────────────── */
+.cat-layout { display: grid; gap: var(--sp-6); }
+@media (min-width: 940px) {
+  .cat-layout { grid-template-columns: 260px minmax(0, 1fr); align-items: start; }
+  .cat-filters { position: sticky; top: calc(var(--header-h) + var(--sp-4)); max-height: calc(100dvh - var(--header-h) - var(--sp-8)); overflow-y: auto; padding-right: var(--sp-2); }
+}
+@media (max-width: 939px) {
+  .cat-filters {
+    border: var(--bw) solid var(--line);
+    border-radius: var(--r-md);
+    padding: var(--sp-4);
+    background: var(--surface);
+  }
+}
+
+/* ─── პურის ნამცეცები ──────────────────────────────────────── */
+#crumbs { color: var(--ink-3); gap: var(--sp-2); flex-wrap: wrap; }
+#crumbs a { text-decoration: none; }
+#crumbs a:hover { color: var(--accent); }
+#crumbs .sep { opacity: 0.5; }
+
+/* ─── Dashboard / Admin ────────────────────────────────────── */
+.panel {
+  border: var(--bw) solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.panel-head {
+  display: flex; align-items: center; gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.panel-head h3 { margin: 0; flex: 1; font-size: var(--fs-md); }
+
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.table th, .table td {
+  text-align: left;
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.table th { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); font-weight: 700; }
+.table tr:hover td { background: var(--surface-2); }
+.table-wrap { overflow-x: auto; }
+
+/* საათების რედაქტორი */
+.hours-editor { display: grid; gap: var(--sp-2); }
+.hours-day {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: var(--sp-3);
+  align-items: center;
+}
+.hours-day .times { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.hours-day input[type='time'] {
+  min-height: 34px; padding: 0.2em 0.4em;
+  background: var(--surface); color: var(--ink);
+  border: var(--bw) solid var(--line-strong); border-radius: var(--r-xs);
+}
+
+/* რუკის ამომრჩევი dashboard-ში */
+.picker-map {
+  height: 300px;
+  border: var(--bw) solid var(--line-strong);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--map-bg);
+}

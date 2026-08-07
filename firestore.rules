@@ -1,0 +1,151 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════
+//  თბილისი LIVE — Firestore Security Rules
+//
+//  წესი: ახალი კოლექცია და მისი rule ერთსა და იმავე commit-ში.
+//  rule-ის გარეშე კოლექცია არის ბაგი, არა TODO.
+// ═══════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ─── დამხმარეები ───────────────────────────────────────── */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // ადმინი — მხოლოდ custom claim-ით. Firestore-ის ველი, რომელსაც
+    // კლიენტი კითხულობს, არასდროს არის უფლების წყარო.
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function isOwnerOf(bizId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/businesses/$(bizId))
+        && get(/databases/$(database)/documents/businesses/$(bizId)).data.ownerUid == request.auth.uid;
+    }
+
+    function unchanged(keys) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(keys);
+    }
+
+    function isString(v, maxLen) {
+      return v is string && v.size() <= maxLen;
+    }
+
+    /* ─── ბიზნესები ─────────────────────────────────────────── */
+
+    match /businesses/{bizId} {
+      // საჯარო კითხვა — ეს არის კატალოგის მთელი აზრი
+      allow read: if true;
+
+      allow create, delete: if isAdmin();
+
+      // მფლობელს შეუძლია საკუთარი პროფილის რედაქტირება, მაგრამ
+      // ვერ შეიცვლის იმას, რაც მისი ხელისუფლების მიღმაა:
+      // მფლობელობა, ნდობის დონე, რეიტინგი, სტატუსი, ნახვების რიცხვი.
+      allow update: if isAdmin()
+        || (isOwnerOf(bizId)
+            && unchanged(['ownerUid', 'tier', 'rating', 'verifiedAt',
+                          'status', 'viewCount', 'source', 'osmId', 'createdAt'])
+            && isString(request.resource.data.name.ka, 200));
+
+      /* მენიუ / პროდუქტები / სერვისები */
+      match /items/{itemId} {
+        allow read: if true;
+        allow write: if isAdmin() || isOwnerOf(bizId);
+      }
+    }
+
+    /* ─── შეფასებები ────────────────────────────────────────── */
+
+    match /reviews/{reviewId} {
+      allow read: if resource.data.status == 'live' || isAdmin();
+
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && isString(request.resource.data.text, 2000)
+        && request.resource.data.status == 'live'
+        && request.resource.data.businessId is string;
+
+      // ავტორს შეუძლია საკუთარის შეცვლა; სტატუსს მხოლოდ ადმინი ცვლის
+      allow update: if isAdmin()
+        || (signedIn() && resource.data.uid == request.auth.uid && unchanged(['status', 'uid', 'businessId']));
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+
+    /* ─── მომხმარებლის შესწორებები ──────────────────────────── */
+
+    match /edits/{editId} {
+      // crowdsourcing — ავტორიზებულ მომხმარებელს შეუძლია შემოთავაზება
+      allow create: if signedIn()
+        && request.resource.data.status == 'pending'
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.businessId is string
+        && isString(request.resource.data.note, 1000);
+
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    /* ─── მფლობელობის მოთხოვნები ────────────────────────────── */
+
+    match /claims/{claimId} {
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && isString(request.resource.data.proof, 1000);
+
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      // დადასტურება ownerUid-ს ანიჭებს — ეს Cloud Function-ის საქმეა
+      allow update, delete: if isAdmin();
+    }
+
+    /* ─── აქციები ───────────────────────────────────────────── */
+
+    match /promos/{promoId} {
+      allow read: if true;
+      allow create: if isAdmin() || isOwnerOf(request.resource.data.businessId);
+      allow update, delete: if isAdmin() || isOwnerOf(resource.data.businessId);
+    }
+
+    /* ─── მომხმარებლები ─────────────────────────────────────── */
+
+    match /users/{uid} {
+      allow read: if true;                                   // საჯარო პროფილი
+      allow write: if signedIn() && request.auth.uid == uid;
+
+      match /saved/{docId} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
+      match /private/{docId} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    /* ─── ტაქსონომია ────────────────────────────────────────── */
+
+    match /taxonomy/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ─── ბანდლების რიგი (მხოლოდ სერვერი) ───────────────────── */
+
+    match /rebuildQueue/{docId} {
+      allow read, write: if false;   // Admin SDK უვლის rules-ის გვერდის ავლით
+    }
+
+    /* ─── ყველაფერი დანარჩენი: აკრძალულია ───────────────────── */
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
