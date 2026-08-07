@@ -4,7 +4,7 @@ import { boot, $, $$, esc, attr, toast, params } from './_boot.js';
 import { emptyState, EMPTY } from '../components/cards.js';
 import { mountBusinessForm } from '../components/business-form.js';
 import { icon } from '../lib/icons.js';
-import { HAS_FIREBASE, BUNDLE_BASE } from '../lib/config.js';
+import { HAS_BACKEND, BUNDLE_BASE } from '../lib/config.js';
 import { loadCity, getState, stats } from '../lib/store.js';
 import { fetchBusiness } from '../lib/data/businesses.js';
 import { pendingEdits, resolveEdit } from '../lib/data/edits.js';
@@ -17,14 +17,14 @@ boot({ active: '', chrome: 'header', footer: true });
 const root = $('#root');
 let tab = params.get('tab') ?? 'businesses';
 
-if (!HAS_FIREBASE) {
+if (!HAS_BACKEND) {
   root.innerHTML = emptyState(EMPTY.needConfig);
 } else {
   guard();
 }
 
 async function guard() {
-  const { onUser, isAdmin } = await import('../lib/firebase.js');
+  const { onUser, isAdmin } = await import('../lib/supabase.js');
   onUser(async (user) => {
     if (!user) {
       root.innerHTML = emptyState({
@@ -190,31 +190,43 @@ async function renderEdits() {
 
 async function renderClaims() {
   root.innerHTML = '<div class="panel"><div class="skel skel-line"></div></div>';
-  const { fs } = await import('../lib/firebase.js');
-  const { db, collection, query, where, getDocs } = await fs();
+  const { supa } = await import('../lib/supabase.js');
+  const sb = await supa();
 
-  const snap = await getDocs(query(collection(db, 'claims'), where('status', '==', 'pending')))
-    .catch(() => null);
-  const list = snap ? snap.docs.map((d) => ({ id: d.id, ...d.data() })) : [];
+  const { data, error } = await sb
+    .from('claims')
+    .select('*, profiles(username, display_name)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
 
+  if (error) {
+    root.innerHTML = emptyState({
+      icon: 'alert',
+      title: 'სია ვერ ჩაიტვირთა',
+      text: error.message,
+    });
+    return;
+  }
+
+  const list = data ?? [];
   if (!list.length) {
     root.innerHTML = emptyState({ icon: 'check', title: 'მოთხოვნა არ არის' });
     return;
   }
 
   await loadCity();
-  const byId = getState().byId;
+  const { bySlug } = getState();
 
   root.innerHTML = `<div class="stack">${list.map((c) => `
     <div class="panel">
       <div class="panel-head">
-        <h3>${esc(byId.get(c.businessId)?.name ?? c.businessId)}</h3>
-        <span class="dim" style="font-size:var(--fs-xs)">${esc(c.email ?? '')}</span>
+        <h3>${esc(bySlug.get(c.business_slug)?.name ?? c.business_slug)}</h3>
+        <span class="dim" style="font-size:var(--fs-xs)">@${esc(c.profiles?.username ?? '—')}</span>
       </div>
       <p style="white-space:pre-wrap">${esc(c.proof ?? '')}</p>
       <p class="dim" style="font-size:var(--fs-xs)">
-        დადასტურება <code>ownerUid</code>-ის მინიჭებას ნიშნავს — ეს Cloud Function-ის საქმეა,
-        რომ კლიენტს ამის უფლება არ ჰქონდეს.
+        დადასტურება პროფილს ბიზნეს-გვერდად აქცევს. ეს სერვერის მხრიდან უნდა
+        მოხდეს — ბრაუზერს ასეთი უფლება არ აქვს და არც უნდა ჰქონდეს.
       </p>
     </div>`).join('')}</div>`;
 }

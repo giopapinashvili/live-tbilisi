@@ -7,17 +7,19 @@ const env = import.meta.env ?? {};
 
 const str = (key, fallback = '') => (env[key] ?? fallback).toString().trim();
 
-export const FIREBASE_CONFIG = {
-  apiKey: str('VITE_FB_API_KEY'),
-  authDomain: str('VITE_FB_AUTH_DOMAIN'),
-  projectId: str('VITE_FB_PROJECT_ID'),
-  storageBucket: str('VITE_FB_STORAGE_BUCKET'),
-  messagingSenderId: str('VITE_FB_MESSAGING_SENDER_ID'),
-  appId: str('VITE_FB_APP_ID'),
+/**
+ * Supabase — შესვლა, ბაზა და ფოტოების საცავი.
+ *
+ * გასაღები საჯაროა და ასეც უნდა იყოს: ბრაუზერში ისედაც ჩანს.
+ * დაცვას ბაზის RLS წესები აკეთებს, არა გასაღების დამალვა.
+ */
+export const SUPABASE = {
+  url: str('VITE_SUPABASE_URL'),
+  key: str('VITE_SUPABASE_KEY'),
 };
 
-/** Firebase კონფიგურირებულია თუ არა — UI-მ ამის მიხედვით უნდა მოიქცეს */
-export const HAS_FIREBASE = Boolean(FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.projectId);
+/** ბექენდი მიბმულია თუ არა — UI-მ ამის მიხედვით უნდა მოიქცეს */
+export const HAS_BACKEND = Boolean(SUPABASE.url && SUPABASE.key);
 
 export const TILES = {
   mode: str('VITE_TILES_MODE', 'osm'),        // pmtiles | maptiler | osm
@@ -38,7 +40,7 @@ export const IS_DEV = Boolean(env.DEV);
 /** გაშვებისას აშკარა გაფრთხილება, თუ რამე კრიტიკული აკლია */
 export function warnMissingConfig() {
   const missing = [];
-  if (!HAS_FIREBASE) missing.push('Firebase (VITE_FB_*)');
+  if (!HAS_BACKEND) missing.push('Supabase (VITE_SUPABASE_URL, VITE_SUPABASE_KEY)');
   if (TILES.mode === 'pmtiles' && !TILES.pmtilesUrl) missing.push('VITE_PMTILES_URL');
   if (TILES.mode === 'maptiler' && !TILES.maptilerKey) missing.push('VITE_MAPTILER_KEY');
   if (missing.length && IS_DEV) {

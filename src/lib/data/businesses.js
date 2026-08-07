@@ -1,147 +1,131 @@
 /**
- * ბიზნესების ჩაწერის ფენა (Firestore).
+ * ბიზნესის ჩაწერის ფენა.
  *
- * კითხვა store.js-ის საქმეა (სტატიკური ბანდლი), ჩაწერა — აქ.
- * DOM-ის კოდი Firestore-ს პირდაპირ არასდროს ეხება.
+ * კითხვა store.js-ის საქმეა (სტატიკური ბანდლი, CDN-იდან, უფასოდ).
+ * ჩაწერა — აქ, ბაზაში.
+ *
+ * ბიზნესები თავად ბაზაში არ დევს და განზრახ: 30 000 ჩანაწერს
+ * ბანდლიდან წაკითხვა უფასოა, ბაზიდან — არა. ბაზაში მხოლოდ ის
+ * მიდის, რაც იცვლება: მენიუ, აქცია, მითვისების მოთხოვნა.
+ *
+ * ბიზნესი მიბმულია `slug`-ით, არა უცხო გასაღებით. ასე ბანდლის
+ * ხელახლა აგება ბაზას არაფერს უშლის.
  */
 
-import { fs, whenAuthReady } from '../firebase.js';
-import { normalize, attrsToList, computeTier, validateBusiness } from '../schema.js';
-import { slugify, searchKey } from '../format.js';
+import { supa, currentUser } from '../supabase.js';
+import { HAS_BACKEND } from '../config.js';
 
-/** ჩასაწერი ფორმა Firestore-ის დოკუმენტად */
-async function toDoc(input, { GeoPoint, serverTimestamp }) {
-  const attrs = input.attrs ?? {};
-  const geofire = await import('geofire-common');
-  return {
-    slug: input.slug || slugify(input.name?.ka ?? ''),
-    name: { ka: input.name?.ka?.trim() ?? '', en: input.name?.en?.trim() ?? '' },
-    descr: input.descr?.ka ? { ka: input.descr.ka.trim() } : null,
+/* ─── მითვისება: „ეს ჩემი ადგილია" ─────────────────────────── */
 
-    loc: new GeoPoint(Number(input.lat), Number(input.lon)),
-    geohash: geofire.geohashForLocation([Number(input.lat), Number(input.lon)]),
-    district: input.district || null,
-    address: input.address?.ka ? { ka: input.address.ka.trim() } : null,
-    addressNote: input.addressNote ?? '',
+/**
+ * მოთხოვნის გაგზავნა. დადასტურების შემდეგ პროფილი ბიზნეს-გვერდად
+ * იქცევა და მენიუს რედაქტირება გაიხსნება.
+ */
+export async function claimBusiness(businessSlug, proof) {
+  const user = currentUser();
+  if (!user) throw new Error('შესვლა საჭიროა');
 
-    category: input.category,
-    subcategories: (input.subcategories ?? []).slice(0, 8),
+  const sb = await supa();
+  const { data, error } = await sb.from('claims').insert({
+    business_slug: businessSlug,
+    user_id: user.id,
+    proof: (proof ?? '').slice(0, 1000) || null,
+  }).select().single();
 
-    hours: input.hours ?? null,
-    alwaysOpen: Boolean(input.alwaysOpen),
-
-    phone: (input.phone ?? []).filter(Boolean),
-    email: input.email ?? '',
-    website: input.website ?? '',
-    social: input.social ?? {},
-
-    cover: input.cover ?? '',
-    photos: input.photos ?? [],
-    logo: input.logo ?? '',
-
-    attrs,
-    attrList: attrsToList(attrs),
-    priceLevel: input.priceLevel ?? null,
-
-    searchName: searchKey(input.name?.ka ?? ''),
-    status: input.status ?? 'active',
-    updatedAt: serverTimestamp(),
-  };
+  if (error) {
+    if (/duplicate key/.test(error.message)) throw new Error('მოთხოვნა უკვე გაგზავნილია და განხილვაშია');
+    throw new Error(error.message);
+  }
+  return data;
 }
 
-/** ახალი ბიზნესი (ადმინი ან მფლობელი) */
-export async function createBusiness(input) {
-  const errors = validateBusiness(input);
-  if (Object.keys(errors).length) throw Object.assign(new Error('ვალიდაცია'), { errors });
-
-  const user = await whenAuthReady();
-  const { db, collection, addDoc, GeoPoint, serverTimestamp } = await fs();
-  const doc = await toDoc(input, { GeoPoint, serverTimestamp });
-
-  return addDoc(collection(db, 'businesses'), {
-    ...doc,
-    rating: { avg: 0, count: 0, sum: 0 },
-    tier: computeTier(input, { ownerClaimed: Boolean(input.ownerUid) }),
-    source: input.source ?? 'manual',
-    osmId: input.osmId ?? null,
-    ownerUid: input.ownerUid ?? user?.uid ?? null,
-    viewCount: 0,
-    createdAt: serverTimestamp(),
-  });
+/** ჩემი გაგზავნილი მოთხოვნები */
+export async function myClaims() {
+  if (!HAS_BACKEND || !currentUser()) return [];
+  const sb = await supa();
+  const { data, error } = await sb.from('claims').select('*').order('created_at', { ascending: false });
+  if (error) { console.warn('[claims]', error.message); return []; }
+  return data ?? [];
 }
 
-/** არსებულის განახლება. tier/rating/ownerUid მხოლოდ სერვერზე იცვლება. */
-export async function updateBusiness(id, input) {
-  const errors = validateBusiness(input);
-  if (Object.keys(errors).length) throw Object.assign(new Error('ვალიდაცია'), { errors });
-
-  const { db, doc: docRef, updateDoc, GeoPoint, serverTimestamp } = await fs();
-  const data = await toDoc(input, { GeoPoint, serverTimestamp });
-  return updateDoc(docRef(db, 'businesses', id), data);
+/** რომელ ბიზნესს ვმართავ (null, თუ ჩვეულებრივი ანგარიშია) */
+export async function myBusinessSlug() {
+  const { currentProfile } = await import('../supabase.js');
+  return currentProfile()?.business_slug ?? null;
 }
 
-/** მიმდინარე მომხმარებლის ბიზნესები */
-export async function myBusinesses() {
-  const user = await whenAuthReady();
-  if (!user) return [];
-  const { db, collection, query, where, getDocs } = await fs();
-  const snap = await getDocs(query(collection(db, 'businesses'), where('ownerUid', '==', user.uid)));
-  return snap.docs.map((d) => normalize(d.id, d.data()));
+/* ─── მენიუ ────────────────────────────────────────────────── */
+
+/**
+ * მენიუ ბაზიდან. ჩრდილავს ბანდლის ვარიანტს — თუ პატრონმა
+ * ფასი შეცვალა, სწორედ ეს ჩანს, ბანდლის ხელახლა აგებამდე.
+ */
+export async function listItems(businessSlug) {
+  if (!HAS_BACKEND) return [];
+  const sb = await supa();
+  const { data, error } = await sb
+    .from('business_items')
+    .select('*')
+    .eq('business_slug', businessSlug)
+    .order('grp_order')
+    .order('sort');
+
+  if (error) { console.warn('[items]', error.message); return []; }
+  return (data ?? []).map(fromRow);
 }
 
-/** ერთი ბიზნესი რედაქტირებისთვის (ქეშის გვერდის ავლით) */
-export async function fetchBusiness(id) {
-  const { db, doc, getDoc } = await fs();
-  const snap = await getDoc(doc(db, 'businesses', id));
-  return snap.exists() ? normalize(snap.id, snap.data()) : null;
-}
+export async function saveItem(businessSlug, item) {
+  const user = currentUser();
+  if (!user) throw new Error('შესვლა საჭიროა');
 
-/* ─── items (მენიუ / პროდუქტი / სერვისი) ───────────────────── */
-
-export async function listItems(businessId) {
-  const { db, collection, getDocs, query, orderBy } = await fs();
-  const snap = await getDocs(query(
-    collection(db, 'businesses', businessId, 'items'),
-    orderBy('groupOrder'), orderBy('order'),
-  ));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
-
-export async function saveItem(businessId, item) {
-  const { db, collection, addDoc, doc, setDoc, serverTimestamp } = await fs();
-  const payload = {
-    name: { ka: item.name?.ka ?? item.name ?? '' },
-    descr: item.descr?.ka ? { ka: item.descr.ka } : null,
-    group: item.group ?? 'სხვა',
-    groupOrder: item.groupOrder ?? 0,
-    order: item.order ?? 0,
+  const sb = await supa();
+  const row = {
+    business_slug: businessSlug,
+    owner_id: user.id,
+    name: (item.name ?? '').trim().slice(0, 120),
+    descr: (item.descr ?? '').trim().slice(0, 400) || null,
+    grp: item.group?.trim() || 'სხვა',
+    grp_order: item.groupOrder ?? 0,
+    sort: item.order ?? 0,
     price: item.price ?? null,
-    oldPrice: item.oldPrice ?? null,
-    currency: 'GEL',
-    unit: item.unit ?? '',
-    photo: item.photo ?? '',
+    old_price: item.oldPrice ?? null,
+    unit: item.unit || null,
+    photo_path: item.photoPath ?? null,
     available: item.available !== false,
-    attrs: item.attrs ?? {},
-    updatedAt: serverTimestamp(),
+    updated_at: new Date().toISOString(),
   };
-  if (item.id) return setDoc(doc(db, 'businesses', businessId, 'items', item.id), payload, { merge: true });
-  return addDoc(collection(db, 'businesses', businessId, 'items'), payload);
+
+  if (!row.name) throw new Error('სახელი აუცილებელია');
+
+  const q = item.id
+    ? sb.from('business_items').update(row).eq('id', item.id)
+    : sb.from('business_items').insert(row);
+
+  const { data, error } = await q.select().single();
+  if (error) throw new Error(error.message);
+  return fromRow(data);
 }
 
-export async function deleteItem(businessId, itemId) {
-  const { db, doc, deleteDoc } = await fs();
-  return deleteDoc(doc(db, 'businesses', businessId, 'items', itemId));
+export async function deleteItem(itemId) {
+  const sb = await supa();
+  const { error } = await sb.from('business_items').delete().eq('id', itemId);
+  if (error) throw new Error(error.message);
 }
 
-/* ─── მფლობელობის მოთხოვნა ─────────────────────────────────── */
-
-export async function claimBusiness(businessId, proof) {
-  const user = await whenAuthReady();
-  if (!user) throw new Error('საჭიროა ავტორიზაცია');
-  const { db, collection, addDoc, serverTimestamp } = await fs();
-  return addDoc(collection(db, 'claims'), {
-    businessId, uid: user.uid, email: user.email ?? '',
-    proof: (proof ?? '').slice(0, 1000),
-    status: 'pending', createdAt: serverTimestamp(),
-  });
+/** ბაზის სვეტები → აპლიკაციის ველები */
+function fromRow(r) {
+  return {
+    id: r.id,
+    businessSlug: r.business_slug,
+    name: r.name,
+    descr: r.descr ?? '',
+    group: r.grp,
+    groupOrder: r.grp_order,
+    order: r.sort,
+    price: r.price,
+    oldPrice: r.old_price,
+    unit: r.unit ?? '',
+    photoPath: r.photo_path ?? '',
+    available: r.available,
+  };
 }

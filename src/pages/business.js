@@ -33,7 +33,7 @@ import { record, toggleFollow, toggleSave, isFollowing, isSaved } from '../lib/t
 import { openCommentSheet, openRatingSheet, starsView, commentCount } from '../components/comments.js';
 import { displayRating, getComments } from '../lib/social.js';
 import { setTitle, setDescription, setCanonical, setJsonLd } from '../lib/seo.js';
-import { HAS_FIREBASE } from '../lib/config.js';
+import { HAS_BACKEND } from '../lib/config.js';
 
 followSystemTheme();
 mountTabBar({ active: '' });
@@ -442,7 +442,7 @@ function openReport() {
     const data = new FormData(ev.target);
     const note = String(data.get('note') ?? '').trim();
     if (!note) { toast('აღწერე რა არის არასწორი', 'error'); ev.preventDefault(); return; }
-    if (!HAS_FIREBASE) { toast('Firebase ჯერ არ არის დაყენებული', 'error'); return; }
+    if (!HAS_BACKEND) { toast('Firebase ჯერ არ არის დაყენებული', 'error'); return; }
     try {
       const { submitEdit } = await import('../lib/data/edits.js');
       await submitEdit({ businessId: biz.id, field: data.get('field'), note });

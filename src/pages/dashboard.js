@@ -4,7 +4,7 @@ import { boot, $, esc, attr, toast, params } from './_boot.js';
 import { emptyState, EMPTY } from '../components/cards.js';
 import { mountBusinessForm } from '../components/business-form.js';
 import { icon } from '../lib/icons.js';
-import { HAS_FIREBASE } from '../lib/config.js';
+import { HAS_BACKEND } from '../lib/config.js';
 import { myBusinesses, fetchBusiness, listItems, saveItem, deleteItem } from '../lib/data/businesses.js';
 import { statusBadge } from '../lib/hours.js';
 import { price, toTetri } from '../lib/format.js';
@@ -14,14 +14,14 @@ boot({ active: 'profile', chrome: 'header', footer: true });
 
 const root = $('#root');
 
-if (!HAS_FIREBASE) {
+if (!HAS_BACKEND) {
   root.innerHTML = emptyState(EMPTY.needConfig);
 } else {
   init();
 }
 
 async function init() {
-  const { onUser } = await import('../lib/firebase.js');
+  const { onUser } = await import('../lib/supabase.js');
   onUser((user) => {
     if (!user) {
       root.innerHTML = emptyState({

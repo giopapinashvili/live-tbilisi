@@ -1,44 +1,46 @@
 /**
  * მომხმარებლის შესწორებები.
  *
- * ეს კოლექცია პროექტის მდგრადობის მექანიზმია: 30,000 ბიზნესის
- * მონაცემს ხელით ვერავინ განაახლებს, crowdsourcing კი მუშაობს.
+ * ეს პროექტის მდგრადობის მექანიზმია: 30 000 ბიზნესის მონაცემს
+ * ხელით ვერავინ განაახლებს, ხალხის შემოწირული შესწორება კი მუშაობს.
  */
 
-import { fs, whenAuthReady } from '../firebase.js';
+import { supa, currentUser } from '../supabase.js';
+import { HAS_BACKEND } from '../config.js';
 
 /**
- * @param {{businessId:string, field:string, note:string, oldValue?:any, newValue?:any}} input
+ * @param {{businessSlug:string, field:string, note:string,
+ *          oldValue?:string, newValue?:string}} input
  */
 export async function submitEdit(input) {
-  const user = await whenAuthReady();
-  const { db, collection, addDoc, serverTimestamp } = await fs();
+  if (!HAS_BACKEND) throw new Error('ბექენდი არ არის მიბმული');
+  const user = currentUser();
+  if (!user) throw new Error('შესწორების გასაგზავნად შესვლა საჭიროა');
 
-  return addDoc(collection(db, 'edits'), {
-    businessId: input.businessId,
+  const sb = await supa();
+  const { data, error } = await sb.from('edits').insert({
+    business_slug: input.businessSlug,
+    user_id: user.id,
     field: input.field,
-    note: (input.note ?? '').slice(0, 1000),
-    oldValue: input.oldValue ?? null,
-    newValue: input.newValue ?? null,
-    uid: user?.uid ?? null,
-    status: 'pending',
-    createdAt: serverTimestamp(),
-  });
+    note: (input.note ?? '').slice(0, 1000) || null,
+    old_value: input.oldValue ?? null,
+    new_value: input.newValue ?? null,
+  }).select().single();
+
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-/** ადმინისთვის — მოლოდინში მყოფი შესწორებები */
-export async function pendingEdits(max = 50) {
-  const { db, collection, query, where, orderBy, limit, getDocs } = await fs();
-  const snap = await getDocs(query(
-    collection(db, 'edits'),
-    where('status', '==', 'pending'),
-    orderBy('createdAt', 'desc'),
-    limit(max),
-  ));
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-}
+/** საკუთარი გაგზავნილი შესწორებები */
+export async function myEdits(max = 50) {
+  if (!HAS_BACKEND || !currentUser()) return [];
+  const sb = await supa();
+  const { data, error } = await sb
+    .from('edits')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(max);
 
-export async function resolveEdit(id, status) {
-  const { db, doc, updateDoc, serverTimestamp } = await fs();
-  return updateDoc(doc(db, 'edits', id), { status, resolvedAt: serverTimestamp() });
+  if (error) { console.warn('[edits]', error.message); return []; }
+  return data ?? [];
 }

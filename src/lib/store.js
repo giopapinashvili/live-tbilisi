@@ -10,7 +10,7 @@
  * გვერდი არასდროს „ტყდება" მონაცემის არარსებობის გამო.
  */
 
-import { BUNDLE_BASE, HAS_FIREBASE } from './config.js';
+import { BUNDLE_BASE, HAS_BACKEND } from './config.js';
 import { decodeRow, normalize } from './schema.js';
 import { searchKey } from './format.js';
 import { status } from './hours.js';
@@ -53,10 +53,10 @@ export function loadCity() {
       const fromBundle = await loadFromBundle();
       if (fromBundle?.length) return commit(fromBundle, 'bundle');
 
-      if (HAS_FIREBASE) {
-        const fromDb = await loadFromFirestore();
-        return commit(fromDb, fromDb.length ? 'firestore' : 'empty');
-      }
+      // ბიზნესები მხოლოდ ბანდლში ცხოვრობს და განზრახ: 30 000 ჩანაწერის
+      // CDN-იდან წაკითხვა უფასოა, ბაზიდან — არა. თუ ბანდლი ცარიელია,
+      // ესე იგი ჯერ არ აგებულა — და ეს სხვა პრობლემაა, არა მოსაგვარებელი
+      // მეორე მოთხოვნით.
       return commit([], 'empty');
     } catch (err) {
       console.error('[store] ჩატვირთვა ვერ მოხერხდა', err);
@@ -92,23 +92,6 @@ async function loadFromBundle() {
   return rows.map(decodeRow).map(withSearchKey);
 }
 
-async function loadFromFirestore() {
-  const { fs } = await import('./firebase.js');
-  const { db, collection, query, where, limit, getDocs } = await fs();
-  const snap = await getDocs(query(
-    collection(db, 'businesses'),
-    where('status', '==', 'active'),
-    limit(FALLBACK_LIMIT),
-  ));
-  const out = [];
-  snap.forEach((doc) => {
-    const b = normalize(doc.id, doc.data());
-    if (b.lat != null && b.lon != null) out.push(withSearchKey(b));
-    state.full.set(b.id, b);      // fallback-ისას სრული დოკუმენტიც გვაქვს
-  });
-  return out;
-}
-
 function withSearchKey(b) {
   b._key = searchKey(b.name);
   return b;
@@ -140,27 +123,24 @@ export async function getBusiness(idOrSlug) {
   if (state.full.has(id)) return state.full.get(id);
 
   const bundled = await fetchJson(`${BUNDLE_BASE}/b/${id}.json`);
-  if (bundled) {
-    const b = { ...bundled, id, items: bundled.items ?? [], promos: bundled.promos ?? [] };
-    state.full.set(id, b);
-    return b;
+  const base = bundled
+    ? { ...bundled, id, items: bundled.items ?? [], promos: bundled.promos ?? [] }
+    : (light ? { ...light, items: [], promos: [] } : null);
+
+  if (!base) return null;
+
+  // მენიუ ბაზაშიც შეიძლება იყოს — თუ პატრონმა ფასი შეცვალა.
+  // ცოცხალი ჩანაწერი ბანდლისას ჩრდილავს.
+  if (HAS_BACKEND && base.slug) {
+    try {
+      const { listItems } = await import('./data/businesses.js');
+      const live = await listItems(base.slug);
+      if (live.length) base.items = live;
+    } catch { /* ბაზა მიუწვდომელია — ბანდლის მენიუ რჩება */ }
   }
 
-  if (!HAS_FIREBASE) return light ?? null;
-
-  const { fs } = await import('./firebase.js');
-  const { db, doc, getDoc, collection, getDocs, query, orderBy } = await fs();
-  const snap = await getDoc(doc(db, 'businesses', id));
-  if (!snap.exists()) return light ?? null;
-
-  const b = normalize(snap.id, snap.data());
-  const itemsSnap = await getDocs(query(
-    collection(db, 'businesses', id, 'items'),
-    orderBy('groupOrder'), orderBy('order'),
-  )).catch(() => null);
-  b.items = itemsSnap ? itemsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) : [];
-  state.full.set(id, b);
-  return b;
+  state.full.set(id, base);
+  return base;
 }
 
 /* ─────────────────────────────────────────────────────────────

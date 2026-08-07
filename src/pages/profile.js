@@ -13,7 +13,7 @@ import { loadCity, getState } from '../lib/store.js';
 import { getProfile, maturity, syncProfile } from '../lib/taste.js';
 import { CATEGORY_MAP, SUBCATEGORY_MAP } from '../data/taxonomy.js';
 import { num } from '../lib/format.js';
-import { HAS_FIREBASE } from '../lib/config.js';
+import { HAS_BACKEND } from '../lib/config.js';
 
 boot({ active: 'profile', canonical: false });
 
@@ -22,8 +22,8 @@ let user = null;
 
 (async () => {
   await loadCity();
-  if (HAS_FIREBASE) {
-    const { onUser } = await import('../lib/firebase.js');
+  if (HAS_BACKEND) {
+    const { onUser } = await import('../lib/supabase.js');
     onUser((u) => { user = u; paint(); syncProfile(); });
   } else {
     paint();
@@ -61,7 +61,7 @@ function paint() {
     </header>
 
     <div class="pf-actions">
-      ${HAS_FIREBASE
+      ${HAS_BACKEND
     ? (user
       ? '<button class="btn" type="button" data-act="logout">გასვლა</button>'
       : '<button class="btn btn-primary" type="button" data-act="login">შესვლა</button>')
@@ -128,11 +128,11 @@ function paint() {
 delegate(root, 'click', '[data-act]', async (e, btn) => {
   const act = btn.dataset.act;
   if (act === 'login') {
-    const { signInWithGoogle } = await import('../lib/firebase.js');
+    const { signInWithGoogle } = await import('../lib/supabase.js');
     await signInWithGoogle().catch(() => toast('შესვლა ვერ მოხერხდა', 'error'));
   }
   if (act === 'logout') {
-    const { signOutUser } = await import('../lib/firebase.js');
+    const { signOutUser } = await import('../lib/supabase.js');
     await signOutUser();
   }
   if (act === 'reset') {

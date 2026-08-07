@@ -268,23 +268,30 @@ export function rankFeed(entries, opts = {}) {
   return out;
 }
 
-/** სინქრონიზაცია Firestore-თან (ავტორიზებულ მომხმარებელზე) */
+/**
+ * გემოვნების პროფილის სინქრონიზაცია.
+ *
+ * ტელეფონზეც და კომპიუტერზეც ერთი და იგივე ფიდი უნდა იყოს.
+ * უფრო ახალი ვერსია იმარჯვებს — ვისაც ბოლოს შეეხო.
+ */
 export async function syncProfile() {
-  const { HAS_FIREBASE } = await import('./config.js');
-  if (!HAS_FIREBASE) return;
-  const { whenAuthReady, fs } = await import('./firebase.js');
-  const user = await whenAuthReady();
-  if (!user) return;
+  try {
+    const { supa, currentUser, HAS_BACKEND } = await import('./supabase.js');
+    if (!HAS_BACKEND || !currentUser()) return;
 
-  const { db, doc, setDoc, getDoc } = await fs();
-  const ref = doc(db, 'users', user.uid, 'private', 'taste');
+    const sb = await supa();
+    const uid = currentUser().id;
 
-  const remote = await getDoc(ref).then((s) => (s.exists() ? s.data() : null)).catch(() => null);
-  if (remote?.updatedAt > profile.updatedAt) {
-    profile = { ...empty(), ...remote };
-    try { localStorage.setItem(KEY, JSON.stringify(profile)); } catch { /* ignore */ }
-    listeners.forEach((fn) => fn(profile));
-    return;
-  }
-  await setDoc(ref, profile, { merge: true }).catch(() => {});
+    const { data } = await sb.from('profiles').select('taste').eq('id', uid).maybeSingle();
+    const remote = data?.taste ?? null;
+
+    if (remote?.updatedAt > profile.updatedAt) {
+      profile = { ...empty(), ...remote };
+      try { localStorage.setItem(KEY, JSON.stringify(profile)); } catch { /* ignore */ }
+      listeners.forEach((fn) => fn(profile));
+      return;
+    }
+
+    await sb.from('profiles').update({ taste: profile }).eq('id', uid);
+  } catch { /* სინქრონიზაცია არასდროს არ უნდა შეაჩეროს აპლიკაცია */ }
 }

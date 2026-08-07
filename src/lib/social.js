@@ -1,16 +1,19 @@
 /**
- * კომენტარები და შეფასებები.
+ * კომენტარები და შეფასებები — ლოკალური ფენა.
  *
- * ორმაგი საცავი განზრახია:
- *   • Firestore — როცა კონფიგურირებულია და მომხმარებელი შესულია
- *   • localStorage — ყოველთვის, დაუყოვნებლივ
+ * ეს მოდული მხოლოდ localStorage-ს ეხება და განზრახ.
  *
- * ჯერ ლოკალურად იწერება (ინტერფეისი მაშინვე რეაგირებს), მერე
- * ფონურად სერვერზე. ასე კომენტარი მუშაობს ავტორიზაციამდეც და
- * ქსელის გარეშეც — რაც პლატფორმის დასაწყისში კრიტიკულია.
+ * ფიდში ორნაირი პოსტია: სატესტო (სტატიკურ ბანდლში, ბაზაში არ არსებობს)
+ * და ნამდვილი (ბაზაში). სატესტოზე დატოვებულ კომენტარს ბაზაში ვერ
+ * ჩავწერთ — იქ ასეთი პოსტი არ არის და კავშირი გაწყვეტილი გამოვა.
+ *
+ * ამიტომ გაყოფილია:
+ *   ეს ფაილი   — სატესტო პოსტები და ავტორიზაციამდელი მდგომარეობა
+ *   feed-db.js — ნამდვილი პოსტები, ნამდვილი ხალხი, ბაზაში
+ *
+ * ლოკალური ჩანაწერი ინტერფეისს მაშინვე ამოძრავებს — კომენტარი
+ * ინტერნეტის გარეშეც ჩანს.
  */
-
-import { HAS_FIREBASE } from './config.js';
 
 const CKEY = 'tl.comments.v1';
 const RKEY = 'tl.ratings.v1';
@@ -71,7 +74,6 @@ export async function addComment(threadId, text, {
   all[threadId] = [...(all[threadId] ?? []), entry];
   write(CKEY, all);
 
-  pushRemote('comments', { threadId, businessId, ...entry });
   return entry;
 }
 
@@ -107,10 +109,29 @@ export function getRating(businessId) {
 export async function setRating(businessId, stars, text = '') {
   const n = Math.max(1, Math.min(5, Math.round(Number(stars) || 0)));
   const all = read(RKEY);
-  all[businessId] = { stars: n, text: String(text).trim().slice(0, 800), at: Date.now() };
+  all[businessId] = { stars: n, text: String(text).trim().slice(0, 600), at: Date.now() };
   write(RKEY, all);
-  pushRemote('reviews', { businessId, rating: n, text: all[businessId].text });
+
+  // შეფასება კომენტარისგან განსხვავებით ბაზაშიც მიდის: ის ბიზნესს
+  // slug-ით ებმება, არა პოსტს, ამიტომ სატესტო ჩანაწერსაც უჭირავს.
+  pushRating(businessId, n, all[businessId].text);
   return n;
+}
+
+/** ფონური სინქრონიზაცია. წარუმატებლობა ლოკალურ ჩანაწერს არ ეხება. */
+async function pushRating(businessSlug, stars, body) {
+  try {
+    const { supa, currentUser, HAS_BACKEND } = await import('./supabase.js');
+    if (!HAS_BACKEND || !currentUser()) return;
+    const sb = await supa();
+    await sb.from('ratings').upsert({
+      user_id: currentUser().id,
+      business_slug: businessSlug,
+      stars,
+      body: body || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,business_slug' });
+  } catch { /* ლოკალურად უკვე შენახულია — არაფერი დაკარგულა */ }
 }
 
 export function clearRating(businessId) {
@@ -131,24 +152,3 @@ export function displayRating(business) {
   return { avg: sum / count, count, mine };
 }
 
-/* ─── სერვერზე გადაგზავნა (თუ შესაძლებელია) ────────────────── */
-
-async function pushRemote(collectionName, data) {
-  if (!HAS_FIREBASE) return;
-  try {
-    const { whenAuthReady, fs } = await import('./firebase.js');
-    const user = await whenAuthReady();
-    if (!user) return;                       // ანონიმური კომენტარი მხოლოდ ლოკალურად რჩება
-
-    const { db, collection, addDoc, serverTimestamp } = await fs();
-    await addDoc(collection(db, collectionName), {
-      ...data,
-      uid: user.uid,
-      authorName: user.displayName ?? '',
-      status: 'live',
-      createdAt: serverTimestamp(),
-    });
-  } catch {
-    /* ლოკალური ჩანაწერი უკვე შენახულია — მომხმარებელს არაფერი დაეკარგა */
-  }
-}

@@ -3,7 +3,7 @@
 import { el, $ } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { toggleTheme } from '../lib/theme.js';
-import { HAS_FIREBASE } from '../lib/config.js';
+import { HAS_BACKEND } from '../lib/config.js';
 
 const NAV = [
   { href: '/map.html', label: 'რუკა', key: 'map' },
@@ -47,7 +47,7 @@ export function mountHeader({ active = '', compact = false } = {}) {
 
   host.querySelector('.theme-btn').addEventListener('click', toggleTheme);
 
-  if (HAS_FIREBASE) mountAuthButton(host.querySelector('#hdr-auth'));
+  if (HAS_BACKEND) mountAuthButton(host.querySelector('#hdr-auth'));
   else host.querySelector('#hdr-auth')?.remove();
 
   return host;
@@ -55,7 +55,7 @@ export function mountHeader({ active = '', compact = false } = {}) {
 
 async function mountAuthButton(slot) {
   if (!slot) return;
-  const { onUser, signInWithGoogle, signOutUser } = await import('../lib/firebase.js');
+  const { onUser, signInWithGoogle, signOutUser } = await import('../lib/supabase.js');
 
   onUser((user) => {
     slot.replaceChildren();
