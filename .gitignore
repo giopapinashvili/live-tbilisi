@@ -14,10 +14,15 @@ serviceAccount.json
 firebase-debug.log
 firestore-debug.log
 
-# ლოკალური ბანდლები და იმპორტის ქეში
-public/bundles/
+# იმპორტის ქეში
 .cache/
 tmp/
+
+# public/bundles/ განზრახ არ არის იგნორში.
+# ამჟამად იქ დევს ნაძალადევის სატესტო მონაცემი, რომელიც საიტთან ერთად
+# უნდა აიტვირთოს. როცა Firestore ამუშავდება და ბანდლებს Cloud Function
+# დააგენერირებს, ეს საქაღალდე იგნორში დაბრუნდება.
+# წაშლა: npm run test-data:clean
 
 # OS
 .DS_Store

@@ -13,7 +13,9 @@
     "build:bundles": "node scripts/build-bundles.mjs",
     "deploy:rules": "firebase deploy --only firestore:rules,firestore:indexes",
     "test": "node scripts/selftest.mjs && node scripts/domtest.mjs && node scripts/styletest.mjs",
-    "deploy": "npm run build && npx wrangler deploy"
+    "deploy": "npm run build && npx wrangler deploy",
+    "test-data": "node scripts/build-test-data.mjs",
+    "test-data:clean": "node scripts/build-test-data.mjs --clean"
   },
   "dependencies": {
     "firebase": "^11.1.0",
