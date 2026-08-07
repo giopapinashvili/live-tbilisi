@@ -254,6 +254,30 @@
 .fab:hover { color: var(--accent); border-color: var(--accent); }
 .fab[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 
+/* 3D ღილაკი — ტექსტური, არა ხატულა */
+.fab-3d {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+}
+
+/* კომპასი — ჩნდება მხოლოდ მაშინ, როცა რუკა შებრუნებულია */
+.compass {
+  position: absolute;
+  z-index: var(--z-map-ui);
+  right: var(--sp-3);
+  top: calc(var(--sp-3) + 96px);
+}
+@media (min-width: 1024px) { .compass { right: 56px; top: var(--sp-4); } }
+.compass-needle {
+  display: block;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--danger);
+  transition: transform 120ms linear;
+}
+
 /* მობილურის ფილტრის ღილაკი */
 .filter-fab {
   position: absolute;

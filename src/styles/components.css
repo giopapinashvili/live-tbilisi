@@ -436,8 +436,7 @@ dialog.modal::backdrop { background: rgba(10, 6, 2, 0.55); backdrop-filter: blur
   padding: var(--sp-4); border-top: var(--bw) solid var(--line);
 }
 
-/* ─── ვარსკვლავები ─────────────────────────────────────────── */
-.stars { display: inline-flex; gap: 1px; color: var(--closing); }
+/* ვარსკვლავები app.css-შია — აქ მხოლოდ ზომა */
 .stars svg { width: 14px; height: 14px; }
 .rating-num { font-weight: 700; font-variant-numeric: tabular-nums; }
 

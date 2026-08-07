@@ -254,6 +254,29 @@ $('#fab-locate').addEventListener('click', () => map.locateUser());
 $('#fab-reset').addEventListener('click', () => map.resetView());
 $('#fab-theme').addEventListener('click', toggleTheme);
 
+/* ─── 3D რეჟიმი ────────────────────────────────────────────── */
+const fab3d = $('#fab-3d');
+const compass = $('#compass');
+const needle = compass?.querySelector('.compass-needle');
+
+fab3d.addEventListener('click', () => {
+  const on = map.toggle3D();
+  fab3d.setAttribute('aria-pressed', String(on));
+  compass.hidden = !on;
+});
+
+// კომპასი ბრუნავს კამერასთან ერთად — ჩრდილოეთი ყოველთვის ჩანს
+map.map.on('rotate', () => {
+  if (!needle) return;
+  needle.style.transform = `rotate(${-map.map.getBearing()}deg)`;
+  if (!compass.hidden) return;
+  if (Math.abs(map.map.getBearing()) > 1) compass.hidden = false;
+});
+
+$('#fab-north')?.addEventListener('click', () => {
+  map.map.easeTo({ bearing: 0, duration: 400 });
+});
+
 /* ─── კლავიატურა ───────────────────────────────────────────── */
 document.addEventListener('keydown', (e) => {
   if (e.target.matches('input, textarea, select')) return;

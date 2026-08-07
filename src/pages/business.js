@@ -30,6 +30,8 @@ import { statusBadge, weekTable } from '../lib/hours.js';
 import { price, phone as fmtPhone, num, distance, haversine, ago } from '../lib/format.js';
 import { catName, subName, CATEGORY_MAP, DISTRICT_MAP, ATTRIBUTE_MAP } from '../data/taxonomy.js';
 import { record, toggleFollow, toggleSave, isFollowing, isSaved } from '../lib/taste.js';
+import { openCommentSheet, starsView, commentCount } from '../components/comments.js';
+import { displayRating, getComments } from '../lib/social.js';
 import { setTitle, setDescription, setCanonical, setJsonLd } from '../lib/seo.js';
 import { HAS_FIREBASE } from '../lib/config.js';
 
@@ -79,6 +81,7 @@ function paint() {
   const cat = CATEGORY_MAP[biz.category];
   const dist = DISTRICT_MAP[biz.district];
   const groups = menuGroups();
+  const rate = displayRating(biz);
   const tint = `--ring:var(--cat-${biz.category ?? 'public'}); --tint:var(--cat-${biz.category ?? 'public'})`;
 
   root.innerHTML = `
@@ -108,8 +111,12 @@ function paint() {
 
         <div class="pf-stats">
           <div class="pf-stat"><b>${num(biz.items?.length ?? 0)}</b><span>პროდუქტი</span></div>
-          <div class="pf-stat"><b>${biz.ratingCount ? biz.ratingAvg.toFixed(1) : '—'}</b><span>შეფასება</span></div>
-          <div class="pf-stat"><b>${num(biz.viewCount ?? 0)}</b><span>ნახვა</span></div>
+          <button class="pf-stat pf-stat-btn" type="button" data-act="rate">
+            <b>${rate.avg ? rate.avg.toFixed(1) : '—'}</b><span>შეფასება</span>
+          </button>
+          <button class="pf-stat pf-stat-btn" type="button" data-act="rate">
+            <b>${num(commentCount(`b:${biz.id}`))}</b><span>კომენტარი</span>
+          </button>
         </div>
 
         <div class="pf-bio">
@@ -132,9 +139,21 @@ function paint() {
       ${biz.phone?.length
     ? `<a class="btn" href="tel:${attr(biz.phone[0])}" data-act="call">დარეკვა</a>`
     : '<button class="btn" type="button" disabled>ტელეფონი უცნობია</button>'}
-      <button class="btn btn-icon" type="button" data-act="save" aria-pressed="${isSaved(biz.id)}"
+      <button class="btn btn-icon act-heart" type="button" data-act="save" aria-pressed="${isSaved(biz.id)}"
               aria-label="შენახვა">${icon('heart', { size: 18, fill: isSaved(biz.id) })}</button>
     </div>
+
+    <button class="pf-rate-bar" type="button" data-act="rate">
+      ${starsView(rate.mine ?? rate.avg ?? 0, { size: 18 })}
+      <span class="pf-rate-text">
+        ${rate.mine
+    ? `შენ შეაფასე ${rate.mine} ვარსკვლავით`
+    : rate.count
+      ? `${rate.avg.toFixed(1)} · ${num(rate.count)} შეფასება`
+      : 'პირველი შეაფასე'}
+      </span>
+      <span class="dim">${icon('chevron', { size: 15 })}</span>
+    </button>
 
     ${groups.length ? `
       <div class="pf-highlights">
@@ -153,6 +172,7 @@ function paint() {
       ${tabBtn('grid', 'ბადე')}
       ${tabBtn('menu', 'მენიუ')}
       ${tabBtn('posts', 'პოსტები')}
+      ${tabBtn('reviews', 'შეფასებები')}
       ${tabBtn('info', 'ინფო')}
     </div>
 
@@ -185,7 +205,42 @@ function panel() {
   if (activeTab === 'grid') return gridPanel();
   if (activeTab === 'menu') return menuPanel();
   if (activeTab === 'posts') return postsPanel();
+  if (activeTab === 'reviews') return reviewsPanel();
   return infoPanel();
+}
+
+function reviewsPanel() {
+  const rate = displayRating(biz);
+  const list = getComments(`b:${biz.id}`);
+
+  return `
+    <div class="rev-summary">
+      <div class="rev-big">${rate.avg ? rate.avg.toFixed(1) : '—'}</div>
+      <div>
+        ${starsView(rate.avg ?? 0, { size: 18 })}
+        <div class="dim" style="font-size:var(--fs-xs); margin-top:2px">
+          ${rate.count ? `${num(rate.count)} შეფასება` : 'ჯერ არავის შეუფასებია'}
+        </div>
+      </div>
+      <span class="spacer"></span>
+      <button class="btn btn-primary btn-sm" type="button" data-act="rate">
+        ${rate.mine ? 'შეცვლა' : 'შეფასება'}
+      </button>
+    </div>
+
+    ${list.length ? `<div class="rev-list">${list.map((c) => `
+      <div class="cmt">
+        <span class="cmt-avatar">${icon('user', { size: 15 })}</span>
+        <div class="cmt-body">
+          <div><b>${esc(c.author)}</b> <span class="dim">${esc(ago(c.createdAt))}</span></div>
+          <div class="cmt-text">${esc(c.text)}</div>
+        </div>
+      </div>`).join('')}</div>`
+    : emptyState({
+      icon: 'info',
+      title: 'კომენტარი ჯერ არ არის',
+      text: 'დაწერე პირველი — სხვას გამოადგება.',
+    })}`;
 }
 
 function gridPanel() {
@@ -356,7 +411,16 @@ delegate(root, 'click', '[data-act]', async (e, btn) => {
   }
 
   if (act === 'report') { e.preventDefault(); openReport(); }
+
+  if (act === 'rate') {
+    e.preventDefault();
+    openCommentSheet({ threadId: `b:${biz.id}`, business: biz, title: biz.name });
+  }
 });
+
+// შეფასების ან კომენტარის შემდეგ გვერდი განახლდეს
+document.addEventListener('tl:rating', () => paint());
+document.addEventListener('tl:comment', () => paint());
 
 delegate(root, 'click', '[data-item]', (e, a) => {
   e.preventDefault();

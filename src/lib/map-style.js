@@ -48,6 +48,8 @@ const PALETTE = {
     waterway: '#B0C7CF',
     building: '#E5DAC7',
     buildingLine: '#D6C7AE',
+    build3dMid: '#D9CBB3',
+    build3dTop: '#C9B79A',
     roadMinor: '#FBF7F0',
     roadMinorLine: '#E6DBC8',
     roadMajor: '#FFFDF9',
@@ -73,6 +75,8 @@ const PALETTE = {
     waterway: '#122731',
     building: '#211A14',
     buildingLine: '#2B231A',
+    build3dMid: '#2B2219',
+    build3dTop: '#3A2E21',
     roadMinor: '#231D17',
     roadMinorLine: '#1B1611',
     roadMajor: '#2E2620',
@@ -176,13 +180,33 @@ function baseLayers(c, theme) {
       },
     }),
 
-    /* ── შენობები ── */
+    /* ── შენობები ──
+       ბრტყელი ფენა ყოველთვის ჩანს; 3D მოცულობა ცალკე ფენაა და
+       map-core-ის „3D" ღილაკი მას რთავს/თიშავს. */
     L('building', 'fill', 'building', {
       minzoom: 13.5,
       paint: {
         'fill-color': c.building,
         'fill-outline-color': c.buildingLine,
         'fill-opacity': ['interpolate', ['linear'], ['zoom'], 13.5, 0, 15, 1],
+      },
+    }),
+    L('building-3d', 'fill-extrusion', 'building', {
+      minzoom: 14,
+      layout: { visibility: 'none' },
+      filter: ['!=', ['get', 'hide_3d'], true],
+      paint: {
+        // სიმაღლის მიხედვით ოდნავ ცვალებადი ფერი — მასა უკეთ იკითხება
+        'fill-extrusion-color': [
+          'interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 6],
+          0, c.building,
+          25, c.build3dMid,
+          80, c.build3dTop,
+        ],
+        'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 6],
+        'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+        'fill-extrusion-opacity': 0.92,
+        'fill-extrusion-vertical-gradient': true,
       },
     }),
 

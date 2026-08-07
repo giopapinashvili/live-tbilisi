@@ -68,13 +68,15 @@ export class CityMap extends EventTarget {
       maxBounds: expand(CITY.bbox, 0.25),
       interactive: this.opts.interactive,
       attributionControl: false,
-      dragRotate: false,
-      pitchWithRotate: false,
+      // ბრუნვა და დახრა ჩართულია — 3D რეჟიმს სჭირდება
+      dragRotate: this.opts.interactive !== false,
+      pitchWithRotate: true,
+      maxPitch: 70,
       fadeDuration: 120,
       // ქართული ტექსტი ვექტორული ტაილებიდან მოდის, ლოკალური fallback არ სჭირდება
     });
 
-    this.map.touchZoomRotate?.disableRotation();
+    this.is3D = false;
     this.map.on('load', () => this._onLoad());
     this._unThemeSub = onThemeChange((t) => this._applyTheme(t));
   }
@@ -94,6 +96,7 @@ export class CityMap extends EventTarget {
     this._bindInteractions();
 
     if (this._pendingData) this.setData(this._pendingData);
+    if (this._want3D) this.set3D(true, { animate: false });
     this._openTimer = setInterval(() => this.refreshOpenState(), OPEN_REFRESH_MS);
 
     if (this.opts.hash) {
@@ -395,6 +398,37 @@ export class CityMap extends EventTarget {
   resetView() {
     this.map.flyTo({ center: CITY.center, zoom: CITY.zoom, bearing: 0, pitch: 0, duration: 700 });
   }
+
+  /**
+   * 3D რეჟიმი — მოცულობითი შენობები, დახრილი კამერა.
+   *
+   * შენობების სიმაღლე OpenStreetMap-იდან მოდის (`render_height`).
+   * სადაც სიმაღლე მითითებული არაა, 6 მეტრი იგულისხმება — ანუ
+   * ცენტრში მაღლობები რეალურია, პერიფერიაზე კი პირობითი.
+   */
+  set3D(on, { animate = true } = {}) {
+    if (!this._ready) { this._want3D = on; return; }
+    this.is3D = Boolean(on);
+
+    if (this.map.getLayer('building-3d')) {
+      this.map.setLayoutProperty('building-3d', 'visibility', this.is3D ? 'visible' : 'none');
+    }
+    if (this.map.getLayer('building')) {
+      this.map.setLayoutProperty('building', 'visibility', this.is3D ? 'none' : 'visible');
+    }
+
+    const target = this.is3D
+      ? { pitch: 55, zoom: Math.max(this.map.getZoom(), 15.5) }
+      : { pitch: 0, bearing: 0 };
+
+    if (animate) this.map.easeTo({ ...target, duration: 700 });
+    else this.map.jumpTo(target);
+
+    this.dispatchEvent(new CustomEvent('mode3d', { detail: { on: this.is3D } }));
+    return this.is3D;
+  }
+
+  toggle3D() { return this.set3D(!this.is3D); }
 
   locateUser() {
     this.geolocate?.trigger();

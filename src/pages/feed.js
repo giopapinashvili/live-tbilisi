@@ -21,6 +21,7 @@ import {
 } from '../lib/taste.js';
 import { KIND_LABEL } from '../data/post-templates.js';
 import { ago } from '../lib/format.js';
+import { openCommentSheet, commentCount } from '../components/comments.js';
 import { distance, num, price } from '../lib/format.js';
 import { CATEGORIES, CATEGORY_MAP, DISTRICTS } from '../data/taxonomy.js';
 import { setCanonical } from '../lib/seo.js';
@@ -77,10 +78,11 @@ function render() {
 
 function paint() {
   feedHost.innerHTML = all.slice(0, shown).map(card).join('');
-  $('#more').hidden = all.length <= shown;
+  const done = shown >= all.length;
+  if (typeof sentinel !== 'undefined') sentinel.hidden = done;
+  const more = $('#more');
+  if (more) more.hidden = true;               // ღილაკი აღარ გვჭირდება
 }
-
-$('#more').addEventListener('click', () => { shown += PAGE; paint(); });
 
 /* ─── ბარათები ─────────────────────────────────────────────── */
 
@@ -123,19 +125,20 @@ function postCard(e) {
 
     <div class="post-body">
       <div class="post-actions">
-        <button class="post-act act-like" type="button" data-act="like"
+        <button class="post-act act-heart act-like" type="button" data-act="like"
                 data-post="${attr(e.id)}" data-id="${attr(b.id)}" aria-pressed="${liked}"
                 aria-label="მოწონება">
           ${icon('heart', { size: 24, fill: liked })}
         </button>
-        <button class="post-act" type="button" data-act="comment" aria-label="კომენტარი">
+        <button class="post-act" type="button" data-act="comment"
+                data-post="${attr(e.id)}" data-id="${attr(b.id)}" aria-label="კომენტარი">
           ${icon('info', { size: 24 })}
         </button>
         <a class="post-act" href="/map.html?b=${encodeURIComponent(b.slug ?? b.id)}" aria-label="რუკაზე">
           ${icon('pin', { size: 24 })}
         </a>
         <span class="spacer"></span>
-        <button class="post-act" type="button" data-act="save" data-id="${attr(b.id)}"
+        <button class="post-act" type="button" data-act="bookmark" data-id="${attr(b.id)}"
                 aria-pressed="${isSaved(b.id)}" aria-label="შენახვა">
           ${icon('tag', { size: 22, fill: isSaved(b.id) })}
         </button>
@@ -148,7 +151,12 @@ function postCard(e) {
         ${esc(e.text)}
       </p>
 
-      ${e.commentCount ? `<div class="post-comments">${num(e.commentCount)} კომენტარის ნახვა</div>` : ''}
+      <button class="post-comments" type="button" data-act="comment"
+              data-post="${attr(e.id)}" data-id="${attr(b.id)}">
+        ${commentCount(`p:${e.id}`)
+    ? `${num(commentCount(`p:${e.id}`))} კომენტარის ნახვა`
+    : 'დაწერე კომენტარი…'}
+      </button>
     </div>
   </article>`;
 }
@@ -190,17 +198,19 @@ function placeCard(e) {
 
     <div class="post-body">
       <div class="post-actions">
-        <button class="post-act" type="button" data-act="like" data-id="${attr(b.id)}"
-                aria-pressed="${isSaved(b.id)}">
-          ${icon('heart', { size: 20 })}<span>მოწონება</span>
+        <button class="post-act act-heart" type="button" data-act="save" data-id="${attr(b.id)}"
+                aria-pressed="${isSaved(b.id)}" aria-label="მოწონება">
+          ${icon('heart', { size: 24, fill: isSaved(b.id) })}
         </button>
-        <button class="post-act" type="button" data-act="follow" data-id="${attr(b.id)}"
-                aria-pressed="${isFollowing(b.id)}">
-          ${icon('plus', { size: 20 })}<span>${isFollowing(b.id) ? 'გამოწერილი' : 'გამოწერა'}</span>
+        <button class="post-act" type="button" data-act="comment" data-id="${attr(b.id)}"
+                aria-label="კომენტარი">${icon('info', { size: 24 })}</button>
+        <a class="post-act" href="/map.html?b=${encodeURIComponent(b.slug ?? b.id)}"
+           aria-label="რუკაზე">${icon('pin', { size: 24 })}</a>
+        <span class="spacer"></span>
+        <button class="btn btn-sm ${isFollowing(b.id) ? '' : 'btn-primary'}" type="button"
+                data-act="follow" data-id="${attr(b.id)}">
+          ${isFollowing(b.id) ? 'გამოწერილი' : 'გამოწერა'}
         </button>
-        <a class="post-act" href="/map.html?b=${encodeURIComponent(b.slug ?? b.id)}">
-          ${icon('pin', { size: 20 })}<span>რუკაზე</span>
-        </a>
       </div>
       <p class="post-text">
         <b>${esc(b.name)}</b>
@@ -308,7 +318,17 @@ delegate(feedHost, 'click', '[data-act]', (e, btn) => {
     setLike(btn.dataset.post, id, !isLiked(btn.dataset.post));
   }
 
+  // ადგილის ბარათზე გული ბიზნესს ინახავს — პოსტი აქ არ არის
   if (act === 'save') {
+    const on = toggleSave(id);
+    btn.setAttribute('aria-pressed', String(on));
+    btn.innerHTML = icon('heart', { size: 24, fill: on });
+    btn.classList.add('bump');
+    setTimeout(() => btn.classList.remove('bump'), 350);
+    record(on ? 'save' : 'view', { business: b });
+  }
+
+  if (act === 'bookmark') {
     const on = toggleSave(id);
     btn.setAttribute('aria-pressed', String(on));
     btn.innerHTML = icon('tag', { size: 22, fill: on });
@@ -323,7 +343,7 @@ delegate(feedHost, 'click', '[data-act]', (e, btn) => {
     record('follow', { business: b });
   }
 
-  if (act === 'comment') toast('კომენტარები მალე დაემატება');
+  if (act === 'comment') openComments(id, btn.dataset.post ?? null);
 
   renderAside();
 });
@@ -365,6 +385,36 @@ delegate(feedHost, 'click', 'a[href^="/business.html"]', (e, a) => {
   const catalogId = a.dataset.catalog;
   record('open', { business: getState().byId.get(id), catalogId: catalogId || undefined });
 });
+
+function openComments(businessId, postId) {
+  const b = getState().byId.get(businessId);
+  openCommentSheet({
+    threadId: postId ? `p:${postId}` : `b:${businessId}`,
+    business: b,
+    title: b?.name,
+  });
+  record('view', { business: b });
+}
+
+// კომენტარის დამატებისას მრიცხველი განახლდეს
+document.addEventListener('tl:comment', () => paint());
+
+/* ─── უსასრულო სქროლი ───────────────────────────────────────
+   „მეტის ჩვენება" ღილაკის ნაცვლად — ბოლოსთან მიახლოებისას
+   შემდეგი პარტია თავისით ჩაიტვირთება. */
+const sentinel = document.createElement('div');
+sentinel.className = 'feed-sentinel';
+sentinel.innerHTML = '<span class="spinner" aria-hidden="true"></span>';
+feedHost.after(sentinel);
+
+const io = new IntersectionObserver((entries) => {
+  if (!entries[0].isIntersecting) return;
+  if (shown >= all.length) { sentinel.hidden = true; return; }
+  shown += PAGE;
+  paint();
+}, { rootMargin: '600px 0px' });
+
+io.observe(sentinel);
 
 function skeleton() {
   return Array.from({ length: 3 }, () => `

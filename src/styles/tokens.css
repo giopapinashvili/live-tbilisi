@@ -97,19 +97,21 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  --bg: #FFFFFF;
-  --bg-tint: #FAFAFA;
+  /* გვერდის ფონი ოდნავ ნაცრისფერია, ბარათები კი თეთრი —
+     ასე ბარათი „ცურავს" და ინტერფეისი არ იშლება ერთ თეთრ ლაქად */
+  --bg: #F7F8FA;
+  --bg-tint: #FFFFFF;
   --surface: #FFFFFF;
-  --surface-2: #FAFAFA;
-  --surface-3: #EFEFEF;
+  --surface-2: #F1F3F6;
+  --surface-3: #E6E9EE;
 
-  --ink: #000000;
-  --ink-2: #737373;
-  --ink-3: #8E8E8E;
+  --ink: #16181C;
+  --ink-2: #5B6470;
+  --ink-3: #8A93A0;
   --ink-inv: #FFFFFF;
 
-  --line: #DBDBDB;
-  --line-strong: #DBDBDB;
+  --line: #E3E6EB;
+  --line-strong: #D3D8E0;
 
   /* აქცენტი — ლურჯი */
   --accent: #0095F6;
@@ -155,19 +157,22 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #000000;
-  --bg-tint: #0A0A0A;
-  --surface: #000000;
-  --surface-2: #1A1A1A;
-  --surface-3: #262626;
+  /* სუფთა შავი იაფად გამოიყურება და თვალს ჭრის.
+     ლურჯისკენ ოდნავ გადახრილი მუქი ნაცრისფერი — ბარათი ფონზე ოდნავ
+     ამაღლებულია და ინტერფეისს სიღრმე უჩნდება. */
+  --bg: #0E1116;
+  --bg-tint: #141920;
+  --surface: #171C24;
+  --surface-2: #1E242D;
+  --surface-3: #283039;
 
-  --ink: #F5F5F5;
-  --ink-2: #A8A8A8;
-  --ink-3: #737373;
-  --ink-inv: #000000;
+  --ink: #EDF1F6;
+  --ink-2: #9AA6B4;
+  --ink-3: #6E7B8A;
+  --ink-inv: #0E1116;
 
-  --line: #262626;
-  --line-strong: #363636;
+  --line: #232A34;
+  --line-strong: #313A46;
 
   --accent: #0095F6;
   --accent-hover: #3AACFF;
