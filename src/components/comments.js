@@ -19,7 +19,15 @@ import {
 
 let csheet;
 
-export function openCommentSheet({ threadId, business, title }) {
+export function openCommentSheet({ threadId, business }) {
+  // ერთიანი ფანჯარა — იგივე, რაც ფიდში
+  return import('./post-modal.js').then((m) => m.openPostModal({
+    threadId, business, post: null, emoji: null,
+  }));
+}
+
+/** ძველი, მარტივი ფურცელი — აღარ გამოიყენება, მაგრამ ვინახავთ ცნობისთვის */
+function legacyCommentSheet({ threadId, business, title }) {
   csheet ??= document.body.appendChild(el('div', { class: 'sheet2', hidden: true }));
   csheet.hidden = false;
   requestAnimationFrame(() => { csheet.dataset.open = 'true'; });

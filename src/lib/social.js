@@ -24,23 +24,45 @@ const write = (key, v) => {
 
 /* ─── კომენტარები ──────────────────────────────────────────── */
 
-/** @returns {Array<{id,text,author,createdAt,mine}>} */
+const LKEY = 'tl.commentLikes.v1';
+
+/** ბრტყელი სია, ძველიდან ახლისკენ — ინსტაგრამის თანმიმდევრობა */
 export function getComments(threadId) {
-  return (read(CKEY)[threadId] ?? []).sort((a, b) => b.createdAt - a.createdAt);
+  return (read(CKEY)[threadId] ?? []).sort((a, b) => a.createdAt - b.createdAt);
+}
+
+/**
+ * ხედ სტრუქტურა: ძირითადი კომენტარები, თითოს პასუხები შიგნით.
+ * ინსტაგრამზე პასუხები ერთ დონეზეა — უფრო ღრმად არ ჩადის.
+ */
+export function getThread(threadId) {
+  const flat = getComments(threadId);
+  const roots = flat.filter((c) => !c.parentId);
+  const byParent = new Map();
+  for (const c of flat) {
+    if (!c.parentId) continue;
+    if (!byParent.has(c.parentId)) byParent.set(c.parentId, []);
+    byParent.get(c.parentId).push(c);
+  }
+  return roots.map((c) => ({ ...c, replies: byParent.get(c.id) ?? [] }));
 }
 
 export function commentCount(threadId) {
   return (read(CKEY)[threadId] ?? []).length;
 }
 
-export async function addComment(threadId, text, { businessId, author = 'შენ' } = {}) {
+export async function addComment(threadId, text, {
+  businessId, author = 'შენ', parentId = null,
+} = {}) {
   const clean = String(text ?? '').trim().slice(0, 800);
   if (!clean) return null;
 
   const entry = {
-    id: `c${Date.now().toString(36)}`,
+    id: `c${Date.now().toString(36)}${Math.floor(Math.random() * 100)}`,
     text: clean,
     author,
+    parentId,
+    likes: 0,
     createdAt: Date.now(),
     mine: true,
   };
@@ -52,6 +74,19 @@ export async function addComment(threadId, text, { businessId, author = 'შე�
   pushRemote('comments', { threadId, businessId, ...entry });
   return entry;
 }
+
+/* ─── კომენტარის მოწონება ──────────────────────────────────── */
+
+export const isCommentLiked = (commentId) => Boolean(read(LKEY)[commentId]);
+
+export function toggleCommentLike(commentId) {
+  const all = read(LKEY);
+  if (all[commentId]) delete all[commentId]; else all[commentId] = Date.now();
+  write(LKEY, all);
+  return Boolean(all[commentId]);
+}
+
+export const commentLikes = (c) => (c.likes ?? 0) + (isCommentLiked(c.id) ? 1 : 0);
 
 export function deleteComment(threadId, id) {
   const all = read(CKEY);

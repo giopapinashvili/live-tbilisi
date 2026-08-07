@@ -798,3 +798,189 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
 .star svg[fill='none'] { fill: none; stroke: var(--line-strong); stroke-width: 1.5; }
 .rate-word { font-size: var(--fs-sm); font-weight: 650; margin-bottom: var(--sp-4); min-height: 1.2em; }
 .rate-text { margin-bottom: var(--sp-4); text-align: left; }
+
+/* ═══════════════════════════════════════════════════════════════
+   პოსტის ფანჯარა — ინსტაგრამის მოდალი
+   მარცხნივ მედია, მარჯვნივ კომენტარები
+   ═══════════════════════════════════════════════════════════════ */
+
+.pm { position: fixed; inset: 0; z-index: var(--z-modal); }
+.pm-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.82);
+  opacity: 0;
+  transition: opacity 220ms var(--ease);
+}
+.pm[data-open='true'] .pm-backdrop { opacity: 1; }
+
+.pm-x {
+  position: absolute;
+  top: 14px; right: 16px;
+  z-index: 3;
+  background: none; border: 0; cursor: pointer;
+  color: #fff;
+  padding: 6px;
+  display: none;
+}
+@media (min-width: 900px) { .pm-x { display: inline-flex; } }
+
+.pm-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 220ms var(--ease), transform 220ms var(--ease-out);
+  overflow: hidden;
+}
+.pm[data-open='true'] .pm-panel { opacity: 1; transform: scale(1); }
+
+@media (min-width: 900px) {
+  .pm-panel {
+    inset: auto;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%) scale(0.98);
+    width: min(1120px, calc(100vw - 8rem));
+    height: min(760px, calc(100dvh - 6rem));
+    flex-direction: row;
+    border-radius: var(--r-xs);
+    border: var(--bw) solid var(--line);
+  }
+  .pm[data-open='true'] .pm-panel { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* ── მედია ── */
+.pm-media {
+  position: relative;
+  flex: none;
+  aspect-ratio: 1;
+  background: #000;
+  display: grid; place-items: center;
+  overflow: hidden;
+}
+.pm-media img { width: 100%; height: 100%; object-fit: contain; }
+.pm-media-fill {
+  width: 100%; height: 100%;
+  display: grid; place-items: center;
+  font-size: clamp(64px, 18vw, 130px);
+  background:
+    radial-gradient(120% 90% at 32% 24%, color-mix(in oklab, var(--tint, var(--accent)) 34%, transparent), transparent 72%),
+    #0b0d10;
+}
+@media (min-width: 900px) {
+  .pm-media { flex: 1 1 auto; aspect-ratio: auto; height: 100%; }
+}
+.pm-kind {
+  position: absolute; left: 14px; top: 14px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.pm-media.pop .heart-pop { animation: heart-burst 900ms var(--ease-out); }
+
+/* ── გვერდითი სვეტი ── */
+.pm-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+}
+@media (min-width: 900px) {
+  .pm-side { flex: 0 0 400px; border-left: var(--bw) solid var(--line); }
+}
+
+.pm-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px var(--sp-4);
+  border-bottom: var(--bw) solid var(--line);
+  flex: none;
+}
+.pm-avatar {
+  width: 34px; height: 34px; flex: none;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 17px;
+  text-decoration: none;
+}
+.pm-who { min-width: 0; }
+.pm-name {
+  display: block;
+  font-size: var(--fs-sm); font-weight: 700;
+  text-decoration: none; color: inherit;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pm-loc {
+  font-size: var(--fs-xs); color: var(--ink-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.pm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-3) var(--sp-4);
+  min-height: 140px;
+}
+.cmt-caption { border-bottom: var(--bw) solid var(--line); padding-bottom: var(--sp-3); margin-bottom: var(--sp-2); }
+.cmt-caption .cmt-avatar { font-size: 15px; text-decoration: none; }
+
+.cmt-replies { margin-top: 10px; padding-left: 6px; border-left: 1px solid var(--line); }
+.cmt-reply-row { padding: 8px 0 0 10px; }
+.cmt-reply-row .cmt-avatar { width: 26px; height: 26px; }
+.cmt-reply-row .cmt-line { font-size: var(--fs-xs); }
+
+.pm-empty { text-align: center; padding: var(--sp-7) var(--sp-3); }
+.pm-empty-title { font-size: var(--fs-md); font-weight: 650; margin-bottom: 4px; }
+
+.pm-foot {
+  flex: none;
+  border-top: var(--bw) solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pm-actions { padding: 8px var(--sp-4) 4px; }
+.pm-likes { padding: 0 var(--sp-4); font-size: var(--fs-sm); font-weight: 650; }
+.pm-time { padding: 2px var(--sp-4) 10px; font-size: 10.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.pm-replying {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px var(--sp-4);
+  background: var(--surface-2);
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+}
+.pm-replying button {
+  background: none; border: 0; cursor: pointer;
+  color: var(--ink-3); display: inline-flex; padding: 2px;
+  margin-left: auto;
+}
+
+.pm-form {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px var(--sp-4) 12px;
+  border-top: var(--bw) solid var(--line);
+}
+.pm-input {
+  flex: 1;
+  background: none; border: 0; outline: none;
+  font-size: var(--fs-sm);
+  color: var(--ink);
+  padding: 8px 0;
+}
+.pm-input::placeholder { color: var(--ink-3); }
+
+/* კომენტარის გული — მარჯვნივ, პატარა */
+.cmt-like {
+  background: none; border: 0; cursor: pointer;
+  color: var(--ink-3); padding: 4px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.cmt-like[aria-pressed='true'] { color: #FF3040; }
+.cmt-like[aria-pressed='true'] svg { fill: #FF3040; stroke: #FF3040; }
+.cmt-like.bump svg { animation: like-bump 320ms var(--ease-out); }

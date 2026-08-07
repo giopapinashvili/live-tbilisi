@@ -20,9 +20,9 @@ import {
   isFollowing, isSaved, isLiked, maturity,
 } from '../lib/taste.js';
 import { KIND_LABEL } from '../data/post-templates.js';
-import { ago } from '../lib/format.js';
-import { openCommentSheet, commentCount } from '../components/comments.js';
-import { distance, num, price } from '../lib/format.js';
+import { openPostModal } from '../components/post-modal.js';
+import { commentCount } from '../lib/social.js';
+import { distance, num, price, ago } from '../lib/format.js';
 import { CATEGORIES, CATEGORY_MAP, DISTRICTS } from '../data/taxonomy.js';
 import { setCanonical } from '../lib/seo.js';
 
@@ -155,7 +155,8 @@ function postCard(e) {
       </button>
     </div>
 
-    <div class="post-media" style="${tint}" data-act="dbl" data-post="${attr(e.id)}" data-id="${attr(b.id)}">
+    <div class="post-media" style="${tint}" data-act="dbl" data-open-post="${attr(e.id)}"
+         data-post="${attr(e.id)}" data-id="${attr(b.id)}">
       <span class="post-media-fill">${e.emoji}</span>
       <span class="post-badge">${esc(KIND_LABEL[e.kind] ?? '')}</span>
       <span class="heart-pop" aria-hidden="true">${icon('heart', { size: 88, fill: true })}</span>
@@ -396,6 +397,7 @@ function setLike(postId, businessId, want) {
 /* ორმაგი დაჭერა სურათზე — ინსტაგრამის ჟესტი */
 delegate(feedHost, 'dblclick', '[data-act="dbl"]', (e, media) => {
   e.preventDefault();
+  media.dataset.suppress = '1';
   setLike(media.dataset.post, media.dataset.id, true);
   media.classList.remove('pop');
   void media.offsetWidth;
@@ -409,18 +411,34 @@ delegate(feedHost, 'click', 'a[href^="/business.html"]', (e, a) => {
   record('open', { business: getState().byId.get(id), catalogId: catalogId || undefined });
 });
 
+/** პოსტის ფანჯარა — მედია მარცხნივ, კომენტარები მარჯვნივ */
 function openComments(businessId, postId) {
   const b = getState().byId.get(businessId);
-  openCommentSheet({
+  if (!b) return;
+  const entry = postId ? all.find((x) => x.id === postId) : null;
+
+  openPostModal({
     threadId: postId ? `p:${postId}` : `b:${businessId}`,
     business: b,
-    title: b?.name,
+    post: entry ? { ...entry, kindLabel: KIND_LABEL[entry.kind] ?? '' } : null,
+    emoji: entry?.emoji ?? emojiFor(b),
+    onChange: () => paint(),
   });
   record('view', { business: b });
 }
 
 // კომენტარის დამატებისას მრიცხველი განახლდეს
 document.addEventListener('tl:comment', () => paint());
+document.addEventListener('tl:like', () => paint());
+
+// ერთი დაჭერა მედიაზე — პოსტის ფანჯარა
+delegate(feedHost, 'click', '[data-open-post]', (e, node) => {
+  if (e.detail > 1) return;                    // ორმაგი დაჭერა მოწონებაა
+  setTimeout(() => {
+    if (node.dataset.suppress === '1') { node.dataset.suppress = '0'; return; }
+    openComments(node.dataset.id, node.dataset.openPost);
+  }, 220);
+});
 
 /* ─── უსასრულო სქროლი ───────────────────────────────────────
    „მეტის ჩვენება" ღილაკის ნაცვლად — ბოლოსთან მიახლოებისას
