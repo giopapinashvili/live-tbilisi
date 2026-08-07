@@ -21,7 +21,6 @@ import { toGeoJSON, hashId, getState } from './store.js';
 import { toMapExpression, filters } from './filters.js';
 import { currentTheme, onThemeChange } from './theme.js';
 import { searchKey } from './format.js';
-import { icon } from './icons.js';
 
 const SRC = 'biz';
 const LYR = {
@@ -394,9 +393,17 @@ export class CityMap extends EventTarget {
     this.geolocate?.trigger();
   }
 
+  /** ხედში ხილული უნიკალური ბიზნესების რაოდენობა */
+  visibleCount() {
+    if (!this._ready || !this.map.getLayer(LYR.pin)) return 0;
+    return new Set(
+      this.map.queryRenderedFeatures({ layers: [LYR.pin] }).map((f) => f.properties.id),
+    ).size;
+  }
+
   /** რუკის ხედში მოხვედრილი ბიზნესები — გვერდითი სიისთვის */
   visibleBusinesses(limit = 200) {
-    if (!this._ready) return [];
+    if (!this._ready || !this.map.getLayer(LYR.pin)) return [];
     const seen = new Set();
     const out = [];
     for (const f of this.map.queryRenderedFeatures({ layers: [LYR.pin] })) {
@@ -471,4 +478,4 @@ function writeHash(map) {
   history.replaceState(null, '', `${location.pathname}${location.search}${hash}`);
 }
 
-export { LYR, SRC, hashId, icon, categoryColorExpression };
+export { LYR, SRC, hashId, categoryColorExpression };

@@ -141,8 +141,7 @@ function syncQuickbar() {
 function updateCount() {
   const total = getState().businesses.length;
   if (!total) { countBox.hidden = true; return; }
-  const visible = map.map.queryRenderedFeatures({ layers: ['biz-pin'] });
-  const unique = new Set(visible.map((f) => f.properties.id)).size;
+  const unique = map.visibleCount();
   countBox.hidden = false;
   countBox.textContent = activeCount() || filters.q
     ? `${num(unique)} ობიექტი ხედში · ${num(total)}-დან`

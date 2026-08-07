@@ -125,7 +125,10 @@ function hoursBlock(b) {
       <section style="margin-bottom:var(--sp-5)">
         <h4>სამუშაო საათები</h4>
         <p class="dim" style="font-size:var(--fs-sm)">
-          უცნობია. თუ იცი, ${'<'}a href="#" data-act="report" data-id="${attr(b.id)}"${'>'}შეგვატყობინე${'<'}/a${'>'}.
+          უცნობია. თუ იცი —
+          <button class="btn btn-ghost btn-sm" type="button" data-act="report" data-id="${attr(b.id)}">
+            შეგვატყობინე
+          </button>
         </p>
       </section>`;
   }
