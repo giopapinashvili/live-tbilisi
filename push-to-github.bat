@@ -25,7 +25,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo [1/3] Remote-is shemowmeba...
+echo [1/4] Remote-is shemowmeba...
 git remote get-url origin >nul 2>&1
 if errorlevel 1 (
   git remote add origin https://github.com/giopapinashvili/live-tbilisi.git
@@ -37,11 +37,23 @@ if errorlevel 1 (
 git remote -v
 echo.
 
-echo [2/3] Branch: main
+echo [2/4] Branch: main
 git branch -M main
 echo.
 
-echo [3/3] Push...
+echo [3/4] Sinqronizacia GitHub-tan...
+git pull --rebase --autostash origin main
+if errorlevel 1 (
+  echo.
+  echo     [!] rebase ver shesrulda - konfliqtia.
+  echo         gaasworeb da gaushvi: git rebase --continue
+  echo.
+  pause
+  exit /b 1
+)
+echo.
+
+echo [4/4] Push...
 echo     (tu brauzeri gaixsneba - sheasrule GitHub-shi shesvla)
 echo.
 git push -u origin main
