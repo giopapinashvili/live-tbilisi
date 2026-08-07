@@ -209,7 +209,9 @@ function buildPosts(business, items, seedOffset) {
     // ბოლო 5 დღეში გაფანტული
     const createdAt = now - Math.floor(r() * 5 * 86400000) - n * 3600000;
     return {
-      id: `p${n + 1}`,
+      // id გლობალურად უნიკალური უნდა იყოს: „p1" 60 ბიზნესს ჰქონდა და
+      // მოწონება, კომენტარი და ფანჯარა სულ სხვა პოსტს ხვდებოდა
+      id: `${business.id}_p${n + 1}`,
       businessId: business.id,
       kind: t.kind,
       text,
