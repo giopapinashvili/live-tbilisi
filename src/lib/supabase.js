@@ -129,12 +129,19 @@ export async function updateProfile(patch) {
    შესვლა და რეგისტრაცია
    ───────────────────────────────────────────────────────────── */
 
-export async function signUpWithEmail(email, password) {
+/**
+ * რეგისტრაცია. `meta` პროფილს ბაზის ტრიგერამდე მიაქვს —
+ * სახელი, გვარი, დაბადების თარიღი, ნიკი.
+ */
+export async function signUpWithEmail(email, password, meta = {}) {
   const sb = await supa();
+  const clean = Object.fromEntries(
+    Object.entries(meta).filter(([, v]) => v !== null && v !== undefined && v !== ''),
+  );
   const { data, error } = await sb.auth.signUp({
     email: email.trim(),
     password,
-    options: { emailRedirectTo: `${location.origin}/login.html` },
+    options: { data: clean, emailRedirectTo: `${location.origin}/login.html` },
   });
   if (error) throw new Error(readableError(error));
   return data;

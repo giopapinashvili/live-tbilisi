@@ -8,6 +8,7 @@ import '../styles/app.css';
 
 import { $, esc, attr, delegate, toast } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
+import { allowed } from '../lib/gate.js';
 import { followSystemTheme } from '../lib/theme.js';
 import { mountTabBar } from '../components/tabbar.js';
 import { mountSearchBox } from '../components/searchbox.js';
@@ -318,6 +319,13 @@ delegate(feedHost, 'click', '[data-act]', (e, btn) => {
   if (act === 'dbl') return;                      // ორმაგი დაჭერა ცალკე მუშავდება
   e.preventDefault();
 
+  // სტუმარს ნახვა და გაზიარება შეუძლია, კვალის დატოვება — არა.
+  // შემოწმება აქ დგას, ერთხელ: ცალ-ცალკე რომ დაგვეწერა,
+  // ერთგან აუცილებლად გამოგვრჩებოდა.
+  const GUARDED = { like: 'like', save: 'save', bookmark: 'save',
+    comment: 'comment', repost: 'post', follow: 'follow' };
+  if (GUARDED[act] && !allowed(GUARDED[act])) return;
+
   const id = btn.dataset.id;
   const b = getState().byId.get(id);
 
@@ -396,6 +404,7 @@ function setLike(postId, businessId, want) {
 
 /* ორმაგი დაჭერა სურათზე — ინსტაგრამის ჟესტი */
 delegate(feedHost, 'dblclick', '[data-act="dbl"]', (e, media) => {
+  if (!allowed('like')) return;
   e.preventDefault();
   media.dataset.suppress = '1';
   setLike(media.dataset.post, media.dataset.id, true);

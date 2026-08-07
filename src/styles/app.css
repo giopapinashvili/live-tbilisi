@@ -1187,3 +1187,196 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
   cursor: pointer;
 }
 .rt-more:hover { color: var(--ink-2); }
+
+/* რეგისტრაცია: სახელი და გვარი ერთ ხაზზე */
+.auth-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+@media (max-width: 380px) { .auth-row { grid-template-columns: 1fr; } }
+
+.auth-opt {
+  font-style: normal;
+  font-weight: 400;
+  color: var(--ink-3);
+  font-size: 11px;
+  margin-inline-start: 4px;
+}
+.auth-field input[type='date'] { width: 100%; }
+
+/* ═══════════════════════════════════════════════════════════
+   სახის გადამრთველი — ვისი სახელით ვმოქმედებ
+   ═══════════════════════════════════════════════════════════ */
+
+.actor-btn {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  background: var(--surface-2);
+  border: var(--bw) solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 4px 10px 4px 4px;
+  cursor: pointer;
+  font: inherit; font-size: var(--fs-xs); font-weight: 600;
+  color: var(--ink);
+  max-width: 190px;
+}
+.actor-btn:hover { border-color: var(--line-strong); }
+.actor-face {
+  width: 26px; height: 26px; flex: none;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 13px; font-weight: 700;
+  overflow: hidden;
+}
+.actor-face img { width: 100%; height: 100%; object-fit: cover; }
+.actor-btn > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.actor-menu {
+  position: absolute; z-index: var(--z-pop, 60);
+  min-width: 250px;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-lg, 0 12px 32px rgb(0 0 0 / 0.14));
+  padding: var(--sp-2);
+  display: grid; gap: 2px;
+}
+.actor-item {
+  display: flex; align-items: center; gap: var(--sp-3);
+  width: 100%;
+  padding: 8px;
+  border: 0; background: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  text-align: start;
+  font: inherit;
+  color: var(--ink);
+}
+.actor-item:hover { background: var(--surface-2); }
+.actor-item[aria-current='true'] { background: var(--accent-soft); }
+.actor-item b { font-size: var(--fs-sm); font-weight: 600; display: block; }
+.actor-item small { font-size: 11px; color: var(--ink-3); }
+.actor-sep { height: 1px; background: var(--line); margin: var(--sp-2) 0; }
+
+/* @ მონიშვნის შემოთავაზება კომპოზერში */
+.mention-pop {
+  position: absolute; z-index: var(--z-pop, 60);
+  width: 280px; max-height: 240px; overflow-y: auto;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-lg, 0 12px 32px rgb(0 0 0 / 0.14));
+  padding: 4px;
+}
+.mention-row {
+  display: flex; align-items: center; gap: var(--sp-3);
+  width: 100%; padding: 7px 8px;
+  border: 0; background: none; border-radius: var(--r-sm);
+  cursor: pointer; text-align: start; font: inherit; color: var(--ink);
+}
+.mention-row:hover, .mention-row[aria-selected='true'] { background: var(--surface-2); }
+.mention-row b { font-size: var(--fs-sm); font-weight: 600; display: block; }
+.mention-row small { font-size: 11px; color: var(--ink-3); }
+.mention-kind {
+  margin-inline-start: auto;
+  font-size: 10px; font-weight: 600;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 1px 7px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   კარიბჭე — შესვლის მოწვევა
+   ტონი მოსაწვევია, არა ამკრძალავი: „აკრძალულია" ადამიანს
+   აბრუნებს, „ერთი წუთია" — შემოჰყავს.
+   ═══════════════════════════════════════════════════════════ */
+
+.gate { position: fixed; inset: 0; z-index: var(--z-modal, 90); }
+.gate[hidden] { display: none; }
+.gate-backdrop {
+  position: absolute; inset: 0;
+  background: rgb(0 0 0 / 0.5);
+  opacity: 0;
+  transition: opacity 220ms var(--ease);
+}
+.gate[data-open='true'] .gate-backdrop { opacity: 1; }
+
+.gate-panel {
+  position: absolute;
+  left: 50%; bottom: 0;
+  translate: -50% 100%;
+  width: min(380px, 100%);
+  background: var(--surface);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding: var(--sp-6) var(--sp-5) calc(var(--sp-5) + env(safe-area-inset-bottom));
+  display: grid; gap: var(--sp-3);
+  text-align: center;
+  transition: translate 260ms var(--ease-out);
+}
+.gate[data-open='true'] .gate-panel { translate: -50% 0; }
+
+@media (min-width: 600px) {
+  .gate-panel {
+    top: 50%; bottom: auto;
+    translate: -50% -46%;
+    border-radius: var(--r-lg);
+    opacity: 0;
+    transition: translate 240ms var(--ease-out), opacity 200ms var(--ease);
+  }
+  .gate[data-open='true'] .gate-panel { translate: -50% -50%; opacity: 1; }
+}
+
+.gate-x {
+  position: absolute; top: 10px; inset-inline-end: 10px;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border: 0; background: none; cursor: pointer;
+  color: var(--ink-3); border-radius: 50%;
+}
+.gate-x:hover { background: var(--surface-2); color: var(--ink); }
+
+.gate-mark {
+  width: 52px; height: 52px; margin: 0 auto;
+  display: grid; place-items: center;
+  border-radius: 15px;
+  background: var(--accent); color: var(--accent-ink);
+  font-family: var(--font-display); font-size: 22px; font-weight: 700;
+}
+.gate-mark span { opacity: 0.75; }
+
+.gate-title { font-size: var(--fs-md); font-weight: 650; margin: 0; }
+.gate-text { font-size: var(--fs-sm); color: var(--ink-2); margin: 0; line-height: 1.55; }
+.gate-acts { display: grid; gap: var(--sp-2); margin-top: var(--sp-2); }
+.gate-later {
+  background: none; border: 0; padding: 4px;
+  color: var(--ink-3); font: inherit; font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.gate-later:hover { color: var(--ink-2); }
+
+/* გვერდი, რომელიც სტუმარს არ ეკუთვნის */
+.wall {
+  max-width: 420px;
+  margin: clamp(40px, 12vh, 110px) auto;
+  padding: 0 var(--sp-4);
+  text-align: center;
+  display: grid; gap: var(--sp-3);
+}
+.wall-mark {
+  width: 72px; height: 72px; margin: 0 auto;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-2); color: var(--ink-3);
+}
+.wall-title { font-family: var(--font-display); font-size: var(--fs-lg); margin: 0; }
+.wall-text { font-size: var(--fs-sm); color: var(--ink-2); margin: 0; line-height: 1.55; }
+.wall-acts { display: flex; gap: var(--sp-2); justify-content: center; flex-wrap: wrap; margin-top: var(--sp-2); }
+.wall-note { font-size: var(--fs-xs); color: var(--ink-3); margin: var(--sp-3) 0 0; }
+.wall-note a { color: var(--accent); }
+
+/* დესკტოპზე „ფიდი" ტაბი ზედმეტია — ლოგო ისედაც მთავარზე აბრუნებს.
+   მობილურზე ლოგო არ ჩანს, ამიტომ იქ ტაბი რჩება: სხვაგვარად
+   მთავარ გვერდზე დაბრუნების გზა აღარ იქნებოდა. */
+@media (min-width: 900px) {
+  .tab[data-tab='feed'] { display: none; }
+}
+.pf-handle { font-size: var(--fs-sm); color: var(--ink-3); margin: -6px 0 var(--sp-3); }

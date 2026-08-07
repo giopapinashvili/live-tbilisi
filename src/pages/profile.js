@@ -1,9 +1,10 @@
 /**
  * მომხმარებლის პროფილი.
  *
- * ავტორიზაციამდეც მუშაობს: გემოვნების პროფილი ბრაუზერშია და
- * მომხმარებელი ხედავს, რას „ხედავს" მასში სისტემა. შესვლისას
- * იგივე მონაცემი Firestore-ში გადადის.
+ * სტუმარს პროფილი არ აქვს და ეს სწორია: პროფილი მოწონებული
+ * პოსტების, გამოწერების და შენახული ადგილების ჯამია — სტუმარს
+ * კი არცერთი არ გააჩნია. ცარიელი გვერდი ჩვენება უარესია, ვიდრე
+ * პატიოსანი მოწვევა.
  */
 
 import { boot, $, esc, delegate, toast } from './_boot.js';
@@ -13,21 +14,31 @@ import { loadCity, getState } from '../lib/store.js';
 import { getProfile, maturity, syncProfile } from '../lib/taste.js';
 import { CATEGORY_MAP, SUBCATEGORY_MAP } from '../data/taxonomy.js';
 import { num } from '../lib/format.js';
-import { HAS_BACKEND } from '../lib/config.js';
+import { guestWall } from '../lib/gate.js';
+import { whenAuthReady, onUser } from '../lib/supabase.js';
 
 boot({ active: 'profile', canonical: false });
 
 const root = $('#root');
 let user = null;
+let profile = null;
 
 (async () => {
-  await loadCity();
-  if (HAS_BACKEND) {
-    const { onUser } = await import('../lib/supabase.js');
-    onUser((u) => { user = u; paint(); syncProfile(); });
-  } else {
+  await Promise.all([loadCity(), whenAuthReady()]);
+
+  if (guestWall(root, {
+    title: 'პროფილი ანგარიშთან ერთად მოდის',
+    text: 'მოწონებული პოსტები, გამოწერები და შენახული ადგილები ერთ ადგილას. '
+        + 'ფიდი, რუკა და ძებნა ანგარიშის გარეშეც ღიაა.',
+  })) return;
+
+  onUser((u, p) => {
+    user = u;
+    profile = p;
+    if (!u) { location.replace('/login.html?next=/profile.html'); return; }
     paint();
-  }
+    syncProfile();
+  });
 })();
 
 function paint() {
@@ -41,12 +52,13 @@ function paint() {
   root.innerHTML = `
     <header class="pf-head">
       <div class="pf-avatar">
-        ${user?.photoURL
-    ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">`
+        ${profile?.avatar_url
+    ? `<img src="${esc(profile.avatar_url)}" alt="" referrerpolicy="no-referrer">`
     : icon('user', { size: 34 })}
       </div>
       <div class="pf-info">
-        <h1 class="pf-name">${esc(user?.displayName ?? 'სტუმარი')}</h1>
+        <h1 class="pf-name">${esc(profile?.display_name ?? '')}</h1>
+        ${profile?.username ? `<div class="pf-handle">@${esc(profile.username)}</div>` : ''}
         <div class="pf-stats">
           <div class="pf-stat"><b>${num(p.follows.length)}</b><span>გამოწერილი</span></div>
           <div class="pf-stat"><b>${num(p.saves.length)}</b><span>შენახული</span></div>
@@ -61,12 +73,9 @@ function paint() {
     </header>
 
     <div class="pf-actions">
-      ${HAS_BACKEND
-    ? (user
-      ? '<button class="btn" type="button" data-act="logout">გასვლა</button>'
-      : '<button class="btn btn-primary" type="button" data-act="login">შესვლა</button>')
-    : ''}
-      <a class="btn" href="/dashboard.html">ჩემი ბიზნესი</a>
+      <button class="btn" type="button" data-act="edit">პროფილის რედაქტირება</button>
+      <a class="btn" href="/dashboard.html">ჩემი გვერდები</a>
+      <button class="btn" type="button" data-act="logout">გასვლა</button>
     </div>
 
     <section class="aside-card" style="margin-top:var(--sp-4)">
@@ -127,13 +136,13 @@ function paint() {
 
 delegate(root, 'click', '[data-act]', async (e, btn) => {
   const act = btn.dataset.act;
-  if (act === 'login') {
-    const { signInWithGoogle } = await import('../lib/supabase.js');
-    await signInWithGoogle().catch(() => toast('შესვლა ვერ მოხერხდა', 'error'));
+  if (act === 'edit') {
+    toast('რედაქტირება მალე დაემატება');
   }
   if (act === 'logout') {
     const { signOutUser } = await import('../lib/supabase.js');
     await signOutUser();
+    location.replace('/');
   }
   if (act === 'reset') {
     if (!confirm('გემოვნების პროფილი წაიშლება. გავაგრძელო?')) return;

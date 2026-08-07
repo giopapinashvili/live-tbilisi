@@ -9,6 +9,7 @@
  */
 
 import { supa, currentUser, currentProfile, readableError } from './supabase.js';
+import { actorId } from './actor.js';
 import { HAS_BACKEND } from './config.js';
 import { upload, remove as removeMedia } from './media.js';
 import { tagsIn } from './richtext.js';
@@ -39,9 +40,9 @@ export async function listPosts({ scope = 'all', limit = 12, before = null } = {
   if (before) q = q.lt('created_at', before);
 
   if (scope === 'following') {
-    const me = currentUser();
+    const me = actorId();
     if (!me) return [];
-    const { data: f } = await sb.from('follows').select('followee_id').eq('follower_id', me.id);
+    const { data: f } = await sb.from('follows').select('followee_id').eq('follower_id', me);
     const ids = (f ?? []).map((r) => r.followee_id);
     if (!ids.length) return [];
     q = q.in('author_id', ids);
@@ -111,8 +112,8 @@ function shape(row) {
  * პოსტი დარჩებოდა და ვერაფრით გავასწორებდით.
  */
 export async function createPost({ body = '', files = [], placeName = '', businessSlug = null, lon = null, lat = null, onProgress } = {}) {
-  const user = currentUser();
-  if (!user) throw new Error('შესვლა საჭიროა');
+  if (!currentUser()) throw new Error('შესვლა საჭიროა');
+  const me = actorId();          // შეიძლება გვერდი იყოს, არა ადამიანი
 
   const text = String(body).trim();
   if (!text && !files.length) throw new Error('დაწერე რამე ან დაამატე ფოტო');
@@ -137,7 +138,7 @@ export async function createPost({ body = '', files = [], placeName = '', busine
   // 2. ჩანაწერი
   const sb = await supa();
   const { data: post, error } = await sb.from('posts').insert({
-    author_id: user.id,
+    author_id: me,
     body: text || null,
     place_name: placeName || null,
     business_slug: businessSlug,
@@ -195,26 +196,26 @@ export async function editPost(postId, body) {
 
 /** რომელი პოსტები მაქვს მოწონებული — ერთი მოთხოვნა მთელ ფიდზე */
 export async function likedAmong(postIds) {
-  const me = currentUser();
+  const me = actorId();
   if (!me || !postIds.length) return new Set();
   const sb = await supa();
   const { data } = await sb.from('post_likes').select('post_id')
-    .eq('user_id', me.id).in('post_id', postIds);
+    .eq('user_id', me).in('post_id', postIds);
   return new Set((data ?? []).map((r) => r.post_id));
 }
 
 /** მოწონება. აბრუნებს ახალ მდგომარეობას. */
 export async function toggleLike(postId, want) {
-  const me = currentUser();
+  const me = actorId();
   if (!me) throw new Error('შესვლა საჭიროა');
   const sb = await supa();
 
   if (want) {
-    const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: me.id });
+    const { error } = await sb.from('post_likes').insert({ post_id: postId, user_id: me });
     if (error && !/duplicate key/.test(error.message)) throw new Error(readableError(error));
     return true;
   }
-  await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', me.id);
+  await sb.from('post_likes').delete().eq('post_id', postId).eq('user_id', me);
   return false;
 }
 
@@ -244,7 +245,7 @@ export async function commentThread(postId) {
 }
 
 export async function addComment(postId, body, parentId = null) {
-  const me = currentUser();
+  const me = actorId();
   if (!me) throw new Error('შესვლა საჭიროა');
   const text = String(body).trim();
   if (!text) return null;
@@ -252,7 +253,7 @@ export async function addComment(postId, body, parentId = null) {
 
   const sb = await supa();
   const { data, error } = await sb.from('comments')
-    .insert({ post_id: postId, author_id: me.id, parent_id: parentId, body: text })
+    .insert({ post_id: postId, author_id: me, parent_id: parentId, body: text })
     .select(C_SELECT).single();
 
   if (error) throw new Error(readableError(error));
@@ -267,24 +268,24 @@ export async function deleteComment(commentId) {
 }
 
 export async function likedComments(commentIds) {
-  const me = currentUser();
+  const me = actorId();
   if (!me || !commentIds.length) return new Set();
   const sb = await supa();
   const { data } = await sb.from('comment_likes').select('comment_id')
-    .eq('user_id', me.id).in('comment_id', commentIds);
+    .eq('user_id', me).in('comment_id', commentIds);
   return new Set((data ?? []).map((r) => r.comment_id));
 }
 
 export async function toggleCommentLike(commentId, want) {
-  const me = currentUser();
+  const me = actorId();
   if (!me) throw new Error('შესვლა საჭიროა');
   const sb = await supa();
   if (want) {
-    const { error } = await sb.from('comment_likes').insert({ comment_id: commentId, user_id: me.id });
+    const { error } = await sb.from('comment_likes').insert({ comment_id: commentId, user_id: me });
     if (error && !/duplicate key/.test(error.message)) throw new Error(readableError(error));
     return true;
   }
-  await sb.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', me.id);
+  await sb.from('comment_likes').delete().eq('comment_id', commentId).eq('user_id', me);
   return false;
 }
 
@@ -313,30 +314,30 @@ export async function followCounts(profileId) {
 }
 
 export async function amFollowing(profileId) {
-  const me = currentUser();
-  if (!me || me.id === profileId) return false;
+  const me = actorId();
+  if (!me || me === profileId) return false;
   const sb = await supa();
   const { data } = await sb.from('follows').select('followee_id')
-    .eq('follower_id', me.id).eq('followee_id', profileId).maybeSingle();
+    .eq('follower_id', me).eq('followee_id', profileId).maybeSingle();
   return Boolean(data);
 }
 
 export async function toggleFollow(profileId, want) {
-  const me = currentUser();
+  const me = actorId();
   if (!me) throw new Error('შესვლა საჭიროა');
-  if (me.id === profileId) throw new Error('საკუთარ თავს ვერ გამოიწერ');
+  if (me === profileId) throw new Error('საკუთარ თავს ვერ გამოიწერ');
 
   const sb = await supa();
   if (want) {
-    const { error } = await sb.from('follows').insert({ follower_id: me.id, followee_id: profileId });
+    const { error } = await sb.from('follows').insert({ follower_id: me, followee_id: profileId });
     if (error && !/duplicate key/.test(error.message)) throw new Error(readableError(error));
     return true;
   }
-  await sb.from('follows').delete().eq('follower_id', me.id).eq('followee_id', profileId);
+  await sb.from('follows').delete().eq('follower_id', me).eq('followee_id', profileId);
   return false;
 }
 
-/** ხალხის ძებნა — @ მონიშვნის შემოთავაზებისთვისაც */
+/** ხალხის ძებნა — საერთო, ყველგან */
 export async function searchPeople(term, limit = 8) {
   const q = String(term ?? '').trim().toLowerCase();
   if (!HAS_BACKEND || q.length < 2) return [];
@@ -346,6 +347,47 @@ export async function searchPeople(term, limit = 8) {
     .or(`username.ilike.${q}%,display_name.ilike.%${q}%`)
     .limit(limit);
   return data ?? [];
+}
+
+/**
+ * @ მონიშვნის შემოთავაზება.
+ *
+ * ადამიანი მხოლოდ მაშინ ჩნდება, თუ მისდევ. გვერდი და ჯგუფი —
+ * ყოველთვის: ისინი საჯაროა და მიმართვა მათი დანიშნულებაა.
+ *
+ * იგივე წესი ბაზაშიც დგას — უცნობის მონიშვნა შეტყობინებას
+ * მაინც ვერ გამოიწვევს, თუნდაც ვინმემ ხელით ჩაწეროს.
+ */
+export async function mentionable(term, limit = 8) {
+  const q = String(term ?? '').trim().toLowerCase();
+  if (!HAS_BACKEND || !q) return [];
+
+  const sb = await supa();
+  const me = actorId();
+  const cols = 'id, username, display_name, avatar_url, kind, verified';
+
+  const pages = sb.from('profiles').select(cols)
+    .neq('kind', 'person')
+    .or(`username.ilike.${q}%,display_name.ilike.%${q}%`)
+    .limit(limit);
+
+  const people = me
+    ? sb.from('follows')
+      .select(`followee:profiles!follows_followee_id_fkey ( ${cols} )`)
+      .eq('follower_id', me)
+      .limit(60)
+    : null;
+
+  const [pRes, fRes] = await Promise.all([pages, people]);
+
+  const followed = (fRes?.data ?? [])
+    .map((r) => r.followee)
+    .filter((p) => p && p.kind === 'person'
+      && ((p.username ?? '').toLowerCase().startsWith(q)
+        || (p.display_name ?? '').toLowerCase().includes(q)));
+
+  // გამოწერილი ადამიანი წინ — ის უფრო სავარაუდოა
+  return [...followed, ...(pRes.data ?? [])].slice(0, limit);
 }
 
 /* ─────────────────────────────────────────────────────────────

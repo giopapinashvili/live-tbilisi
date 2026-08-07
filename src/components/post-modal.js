@@ -24,6 +24,7 @@ import {
   toggleCommentLike, isCommentLiked, commentLikes,
 } from '../lib/social.js';
 import { isLiked, toggleLike, isSaved, toggleSave, record } from '../lib/taste.js';
+import { allowed } from '../lib/gate.js';
 
 let host;
 let ctx = null;          // { threadId, post, business, emoji, onChange }
@@ -174,6 +175,7 @@ function bind() {
 
     const clike = e.target.closest('[data-clike]');
     if (clike) {
+      if (!allowed('like')) return;
       const on = toggleCommentLike(clike.dataset.clike);
       clike.setAttribute('aria-pressed', String(on));
       clike.innerHTML = icon('heart', { size: 13, fill: on });
@@ -184,6 +186,7 @@ function bind() {
 
     const rep = e.target.closest('[data-reply]');
     if (rep) {
+      if (!allowed('reply')) return;
       replyTo = { id: rep.dataset.reply, author: rep.dataset.author };
       paint();
       bindForm();
@@ -196,6 +199,10 @@ function bind() {
 
     const act = e.target.closest('[data-pm]')?.dataset.pm;
     if (!act) return;
+
+    // გაზიარება და დახურვა ყველას შეუძლია; დანარჩენს — ანგარიში სჭირდება
+    const GUARDED = { like: 'like', bookmark: 'save', focus: 'comment' };
+    if (GUARDED[act] && !allowed(GUARDED[act])) return;
 
     if (act === 'cancel-reply') { replyTo = null; paint(); bindForm(); return; }
     if (act === 'focus') { host.querySelector('.pm-input')?.focus(); return; }
@@ -227,6 +234,7 @@ function bind() {
   // ორმაგი დაჭერა მედიაზე — მოწონება
   host.ondblclick = (e) => {
     if (!e.target.closest('.pm-media') || !ctx.post) return;
+    if (!allowed('like')) return;
     setLike(true);
     const m = host.querySelector('.pm-media');
     m.classList.remove('pop');
@@ -251,6 +259,7 @@ function bindForm() {
 
   form.onsubmit = async (e) => {
     e.preventDefault();
+    if (!allowed('comment')) return;
     const added = await addComment(ctx.threadId, input.value, {
       businessId: ctx.business.id,
       parentId: replyTo?.id ?? null,
