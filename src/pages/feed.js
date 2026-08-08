@@ -275,8 +275,15 @@ function renderStories() {
 
 function renderAside() {
   const s = stats();
+  const promoCard = `
+    <a class="aside-card aside-link" href="/promos.html">
+      <h3>აქციები და ფასდაკლებები</h3>
+      <p class="dim" style="font-size:var(--fs-xs); margin:0">
+        ვინ რას სთავაზობს ქალაქს დღეს
+      </p>
+    </a>`;
   const m = maturity();
-  $('#aside').innerHTML = `
+  $('#aside').innerHTML = `${promoCard}
     <div class="aside-card">
       <h3>კატეგორიები</h3>
       ${CATEGORIES.slice(0, 8).map((c) => `

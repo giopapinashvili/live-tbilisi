@@ -25,12 +25,13 @@ export default defineConfig({
         dashboard: resolve('dashboard.html'),
         admin: resolve('admin.html'),
         login: resolve('login.html'),
+        notifications: resolve('notifications.html'),
         notfound: resolve('404.html'),
       },
       output: {
         manualChunks(id) {
           if (id.includes('node_modules/maplibre-gl')) return 'maplibre';
-          if (id.includes('node_modules/firebase')) return 'firebase';
+          if (id.includes('node_modules/@supabase')) return 'supabase';
           if (id.includes('node_modules/pmtiles')) return 'pmtiles';
         },
       },

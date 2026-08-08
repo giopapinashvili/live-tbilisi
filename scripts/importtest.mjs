@@ -171,7 +171,15 @@ function check(file) {
  * უსტილოდ. აწყობა ასეთს არ იჭერს, რადგან შეცდომა არ არის.
  */
 function checkStyles() {
+  const vite = fs.readFileSync(path.join(ROOT, 'vite.config.js'), 'utf8');
+
   for (const file of fs.readdirSync(ROOT).filter((f) => f.endsWith('.html'))) {
+    // ყოველი გვერდი vite-ის შესასვლელებში უნდა იყოს, თორემ
+    // საერთოდ არ აიწყობა — ფაილი არსებობს, საიტზე კი 404-ია
+    if (!vite.includes(`'${file}'`)) {
+      fail(`${file} — vite.config.js-ის input-ში არაა (გვერდი არ აიწყობა)`);
+    }
+
     const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
     const m = html.match(/<script[^>]+src=["']\/([^"']+\.js)["']/);
     if (!m) continue;
