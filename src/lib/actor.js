@@ -93,7 +93,7 @@ export const createPage = (o) => makeActor({ ...o, kind: 'page' });
 export const createGroup = (o) => makeActor({ ...o, kind: 'group' });
 
 async function makeActor({
-  name, username = null, category = null, categories = [],
+  name, altName = null, username = null, category = null, categories = [],
   bio = null, address = null, district = null,
   lon = null, lat = null, online = false, kind = 'page',
 }) {
@@ -110,6 +110,7 @@ async function makeActor({
     p_lat: lat,
     p_online: Boolean(online),
     p_bio: bio || null,
+    p_alt_name: altName || null,
   });
 
   if (error) {

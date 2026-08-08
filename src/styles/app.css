@@ -1830,3 +1830,26 @@ button.pf-stat:hover b { color: var(--accent); }
 
 .cp-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin: var(--sp-4) 0 var(--sp-7); }
 .cp-cta { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-4); }
+
+/* რომელი სახელი ჩანს */
+.cp-lang { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.cp-lang legend {
+  font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2);
+  padding: 0; margin-bottom: 4px;
+}
+.cp-radio { display: flex; align-items: center; gap: 9px; cursor: pointer; }
+.cp-radio span {
+  flex: 1;
+  font-size: var(--fs-sm);
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cp-radio input { position: absolute; opacity: 0; pointer-events: none; }
+.cp-radio input:checked + span {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  font-weight: 600;
+}

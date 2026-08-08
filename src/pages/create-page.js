@@ -98,17 +98,35 @@ function paint(d = {}) {
       <section class="cp-block">
         <h2>სახელი</h2>
 
-        <label class="auth-field">
-          <span>ქართულად</span>
-          <input class="input" name="name" maxlength="80" required
-                 value="${attr(d.name ?? '')}" placeholder="ვებკრაფტ ჯორჯია">
-        </label>
+        <div class="auth-row">
+          <label class="auth-field">
+            <span>ქართულად</span>
+            <input class="input" name="name_ka" maxlength="80"
+                   value="${attr(d.name_ka ?? '')}" placeholder="ვებკრაფტ ჯორჯია">
+          </label>
+          <label class="auth-field">
+            <span>ინგლისურად</span>
+            <input class="input" name="name_en" maxlength="80"
+                   value="${attr(d.name_en ?? '')}" placeholder="WebCraft Georgia">
+          </label>
+        </div>
 
-        <label class="auth-field">
-          <span>ინგლისურად <i class="auth-opt">არასავალდებულო</i></span>
-          <input class="input" name="name_en" maxlength="80"
-                 value="${attr(d.name_en ?? '')}" placeholder="WebCraft Georgia">
-        </label>
+        <fieldset class="cp-lang">
+          <legend>რომელი ჩანდეს ეკრანზე</legend>
+          <label class="cp-radio">
+            <input type="radio" name="shown" value="ka" ${d.shown !== 'en' ? 'checked' : ''}>
+            <span data-prev="ka">ქართული</span>
+          </label>
+          <label class="cp-radio">
+            <input type="radio" name="shown" value="en" ${d.shown === 'en' ? 'checked' : ''}>
+            <span data-prev="en">ინგლისური</span>
+          </label>
+        </fieldset>
+
+        <p class="cp-hint">
+          მეორე სახელი არსად არ გამოჩნდება, მაგრამ ძებნაში იმუშავებს —
+          ვინც ქართულად მოძებნის, მაინც გიპოვის.
+        </p>
 
         <label class="auth-field">
           <span>ნიკი <i class="auth-opt">არასავალდებულო</i></span>
@@ -285,6 +303,17 @@ function bind() {
     });
   }
 
+  // რომელი სახელი ჩანს — ცოცხლად, რომ არჩევანი თვალსაჩინო იყოს
+  const syncNames = () => {
+    const ka = form.querySelector('[name="name_ka"]')?.value.trim();
+    const en = form.querySelector('[name="name_en"]')?.value.trim();
+    form.querySelector('[data-prev="ka"]').textContent = ka ? `ქართული — ${ka}` : 'ქართული';
+    form.querySelector('[data-prev="en"]').textContent = en ? `ინგლისური — ${en}` : 'ინგლისური';
+  };
+  form.querySelector('[name="name_ka"]')?.addEventListener('input', syncNames);
+  form.querySelector('[name="name_en"]')?.addEventListener('input', syncNames);
+  syncNames();
+
   const online = document.querySelector('input[name="online"]');
   online?.addEventListener('change', () => {
     const box = $('#addrbox');
@@ -318,8 +347,15 @@ function bind() {
     if (busy) return;
 
     const fd = new FormData(form);
-    const name = String(fd.get('name') ?? '').trim();
-    if (!name) return show(err, 'სახელი აუცილებელია');
+    const ka = String(fd.get('name_ka') ?? '').trim();
+    const en = String(fd.get('name_en') ?? '').trim();
+    const shown = String(fd.get('shown') ?? 'ka');
+
+    // ჩანს ის, რაც აირჩია; მეორე ჩუმად ინახება ძებნისთვის
+    const name = (shown === 'en' ? en : ka) || en || ka;
+    const altName = (shown === 'en' ? ka : en) || null;
+
+    if (!name) return show(err, 'შეავსე მინიმუმ ერთი სახელი');
 
     if (kind === 'page' && !picked.length) {
       return show(err, 'აირჩიე მინიმუმ ერთი კატეგორია');
@@ -338,7 +374,7 @@ function bind() {
       const make = kind === 'group' ? createGroup : createPage;
       const row = await make({
         name,
-        nameEn: String(fd.get('name_en') ?? '').trim() || null,
+        altName,
         username: String(fd.get('username') ?? '').trim().toLowerCase() || null,
         category: mapCategoryOf(picked),
         categories: picked,
