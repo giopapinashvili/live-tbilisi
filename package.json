@@ -10,7 +10,7 @@
     "preview": "vite preview --port 4173",
     "import:osm": "node scripts/osm-import.mjs",
     "build:bundles": "node scripts/build-bundles.mjs",
-    "test": "node scripts/selftest.mjs && node scripts/domtest.mjs && node scripts/styletest.mjs",
+    "test": "node scripts/importtest.mjs && node scripts/selftest.mjs && node scripts/domtest.mjs && node scripts/styletest.mjs",
     "deploy": "npm run build && npx wrangler deploy",
     "test-data": "node scripts/build-test-data.mjs",
     "test-data:clean": "node scripts/build-test-data.mjs --clean"

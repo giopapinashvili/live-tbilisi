@@ -11,14 +11,14 @@
 
 import { esc, toast } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
-import { applyTheme } from '../lib/theme.js';
+import { currentTheme, setTheme } from '../lib/theme.js';
 import { HAS_BACKEND } from '../lib/config.js';
 import {
   whenAuthReady, currentUser, signInWithEmail, signUpWithEmail,
   signInWithGoogle, resetPassword, readableError, supa,
 } from '../lib/supabase.js';
 
-applyTheme();
+setTheme(currentTheme(), { persist: false });
 
 const host = document.getElementById('auth');
 const next = new URLSearchParams(location.search).get('next') || '/';

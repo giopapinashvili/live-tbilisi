@@ -82,8 +82,8 @@ export async function saveItem(businessSlug, item) {
   const row = {
     business_slug: businessSlug,
     owner_id: user.id,
-    name: (item.name ?? '').trim().slice(0, 120),
-    descr: (item.descr ?? '').trim().slice(0, 400) || null,
+    name: String(item.name?.ka ?? item.name ?? '').trim().slice(0, 120),
+    descr: String(item.descr?.ka ?? item.descr ?? '').trim().slice(0, 400) || null,
     grp: item.group?.trim() || 'სხვა',
     grp_order: item.groupOrder ?? 0,
     sort: item.order ?? 0,
@@ -106,7 +106,9 @@ export async function saveItem(businessSlug, item) {
   return fromRow(data);
 }
 
-export async function deleteItem(itemId) {
+/** წაშლა. პირველი არგუმენტი უგულებელყოფილია — id ისედაც უნიკალურია. */
+export async function deleteItem(a, b) {
+  const itemId = b ?? a;
   const sb = await supa();
   const { error } = await sb.from('business_items').delete().eq('id', itemId);
   if (error) throw new Error(error.message);
@@ -128,4 +130,77 @@ function fromRow(r) {
     photoPath: r.photo_path ?? '',
     available: r.available,
   };
+}
+
+/* ─── შესწორების მოთხოვნა ──────────────────────────────────── */
+/*
+ * სხვის გვერდს ვერავინ არედაქტირებს — ეს განზრახია.
+ * „რედაქტირება" აქ ნიშნავს მოთხოვნის გაგზავნას: შენ წერ, რა
+ * უნდა შეიცვალოს, და ვინც გვერდს ფლობს (ან ადმინი) წყვეტს.
+ *
+ * თუ გვერდი შენია, ცვლილება პირდაპირ მიდის.
+ */
+
+/** ცვლილების მოთხოვნა არსებულ ადგილზე */
+export async function updateBusiness(businessSlug, model) {
+  const { submitEdit } = await import('./edits.js');
+  const mine = await myBusinessSlug();
+
+  // ველი-ველზე შედარებას აქ არ ვაკეთებთ: ფორმა მთელ სურათს
+  // აგზავნის და ადმინი ისედაც უნდა ნახოს, რას ითხოვენ.
+  await submitEdit({
+    businessSlug,
+    field: mine === businessSlug ? 'owner-update' : 'suggestion',
+    note: model?.note ?? '',
+    newValue: JSON.stringify(trimModel(model)),
+  });
+
+  return { id: businessSlug, pending: true };
+}
+
+/** ახალი ადგილის შემოთავაზება — ისიც მოთხოვნაა, არა პირდაპირი ჩაწერა */
+export async function createBusiness(model) {
+  const { submitEdit } = await import('./edits.js');
+  const slug = model?.slug || `new-${Date.now()}`;
+
+  await submitEdit({
+    businessSlug: slug,
+    field: 'new-place',
+    note: model?.note ?? '',
+    newValue: JSON.stringify(trimModel(model)),
+  });
+
+  return { id: slug, pending: true };
+}
+
+/** ერთი ადგილი რედაქტირებისთვის — ბანდლიდან */
+export async function fetchBusiness(idOrSlug) {
+  const { getBusiness } = await import('../store.js');
+  return getBusiness(idOrSlug);
+}
+
+/** ჩემი გვერდები — ის, რასაც ვმართავ */
+export async function myBusinesses() {
+  if (!HAS_BACKEND || !currentUser()) return [];
+  const sb = await supa();
+  const { data, error } = await sb
+    .from('profiles')
+    .select('id, username, display_name, avatar_url, business_slug, category, kind')
+    .neq('kind', 'person')
+    .eq('owner_id', currentUser().id);
+
+  if (error) { console.warn('[pages]', error.message); return []; }
+  return data ?? [];
+}
+
+/** JSON-ში მხოლოდ ის, რაც ადამიანს გამოადგება წასაკითხად */
+function trimModel(m) {
+  if (!m || typeof m !== 'object') return {};
+  const out = {};
+  for (const [k, v] of Object.entries(m)) {
+    if (v === null || v === undefined || v === '') continue;
+    if (Array.isArray(v) && !v.length) continue;
+    out[k] = v;
+  }
+  return out;
 }
