@@ -296,3 +296,288 @@ function close() {
 }
 
 export { commentCount };
+
+/* ═══════════════════════════════════════════════════════════
+   ნამდვილი პოსტი — ბაზიდან
+   
+   ზემოთ დაწერილი openPostModal სატესტო პოსტებს ემსახურება,
+   რომლებიც ბანდლშია და ბაზაში არ არსებობს. აქ სულ სხვა წყაროა:
+   ნამდვილი ავტორი, ნამდვილი ფოტოები, ბაზის კომენტარები.
+   ═══════════════════════════════════════════════════════════ */
+
+let rHost;
+let rPost = null;
+let rReplyTo = null;
+let rSlide = 0;
+
+/** @param {object} post posts.js-ის shape()-ის შედეგი */
+export async function openRemotePost(post) {
+  rPost = post;
+  rReplyTo = null;
+  rSlide = 0;
+
+  rHost ??= document.body.appendChild(el('div', { class: 'pm', hidden: true }));
+  rHost.hidden = false;
+  requestAnimationFrame(() => { rHost.dataset.open = 'true'; });
+  document.body.style.overflow = 'hidden';
+
+  await rPaint();
+  rBind();
+}
+
+async function rPaint() {
+  const [{ commentThread, likedAmong }, { publicUrlSync }, { rich }, { ago, num }] =
+    await Promise.all([
+      import('../lib/posts.js'),
+      import('../lib/media.js'),
+      import('../lib/richtext.js'),
+      import('../lib/format.js'),
+    ]);
+
+  const [thread, liked] = await Promise.all([
+    commentThread(rPost.id),
+    likedAmong([rPost.id]),
+  ]);
+
+  const isLikedNow = liked.has(rPost.id);
+  const a = rPost.author ?? {};
+  const href = a.username ? `/profile.html?u=${encodeURIComponent(a.username)}` : '#';
+  const media = rPost.media ?? [];
+  const cur = media[rSlide];
+
+  rHost.innerHTML = `
+    <div class="pm-backdrop" data-rclose></div>
+    <button class="pm-x" type="button" data-rclose aria-label="დახურვა">
+      ${icon('close', { size: 22 })}
+    </button>
+
+    <div class="pm-panel" role="dialog" aria-label="პოსტი">
+      <div class="pm-media">
+        ${cur
+    ? (cur.kind === 'video'
+      ? `<video src="${attr(publicUrlSync(cur.path))}" controls playsinline></video>`
+      : `<img src="${attr(publicUrlSync(cur.path))}" alt="">`)
+    : `<span class="pm-media-fill">${icon('image', { size: 44 })}</span>`}
+
+        ${media.length > 1 ? `
+          <button class="pm-nav pm-prev" type="button" data-slide="-1" aria-label="წინა">
+            ${icon('back', { size: 18 })}
+          </button>
+          <button class="pm-nav pm-next" type="button" data-slide="1" aria-label="შემდეგი">
+            ${icon('chevron', { size: 18 })}
+          </button>
+          <span class="pm-dots">
+            ${media.map((_, i) => `<i class="${i === rSlide ? 'on' : ''}"></i>`).join('')}
+          </span>` : ''}
+      </div>
+
+      <div class="pm-side">
+        <header class="pm-head">
+          <a class="pm-avatar" href="${href}">
+            ${a.avatar_url ? `<img src="${attr(a.avatar_url)}" alt="">`
+    : esc((a.display_name ?? '?').charAt(0))}
+          </a>
+          <div class="pm-who">
+            <a class="pm-name" href="${href}">${esc(a.display_name ?? '')}</a>
+            ${rPost.place_name ? `<div class="pm-loc">${esc(rPost.place_name)}</div>` : ''}
+          </div>
+        </header>
+
+        <div class="pm-body">
+          ${rPost.body ? `
+            <div class="cmt cmt-caption">
+              <a class="cmt-avatar" href="${href}">
+                ${a.avatar_url ? `<img src="${attr(a.avatar_url)}" alt="">`
+    : esc((a.display_name ?? '?').charAt(0))}
+              </a>
+              <div class="cmt-body">
+                <div class="cmt-line"><b>${esc(a.display_name ?? '')}</b> ${rich(rPost.body)}</div>
+                <div class="cmt-meta"><span>${esc(ago(rPost.created_at))}</span></div>
+              </div>
+            </div>` : ''}
+
+          ${thread.length ? thread.map((c) => rCommentRow(c, rich, ago, num)).join('') : `
+            <div class="pm-empty">
+              <div class="pm-empty-title">კომენტარები ჯერ არ არის</div>
+              <div class="dim">დაიწყე საუბარი.</div>
+            </div>`}
+        </div>
+
+        <div class="pm-foot">
+          <div class="post-actions pm-actions">
+            <button class="post-act act-heart" type="button" data-ract="like"
+                    aria-pressed="${isLikedNow}" aria-label="მოწონება">
+              ${icon('heart', { size: 25, fill: isLikedNow })}
+            </button>
+            <button class="post-act" type="button" data-ract="focus" aria-label="კომენტარი">
+              ${icon('bubble', { size: 25 })}
+            </button>
+            <button class="post-act" type="button" data-ract="share" aria-label="გაზიარება">
+              ${icon('plane', { size: 25 })}
+            </button>
+            <span class="spacer"></span>
+            ${rPost.mine || rPost.author?.id === (await myId()) ? `
+              <button class="post-act" type="button" data-ract="delete" aria-label="წაშლა">
+                ${icon('cross', { size: 22 })}
+              </button>` : ''}
+          </div>
+
+          <div class="pm-likes">${num(rPost.like_count)} მოწონება</div>
+          <div class="pm-time">${esc(ago(rPost.created_at))}</div>
+
+          ${rReplyTo ? `
+            <div class="pm-replying">
+              პასუხი — <b>${esc(rReplyTo.name)}</b>
+              <button type="button" data-ract="cancel-reply" aria-label="გაუქმება">
+                ${icon('close', { size: 13 })}
+              </button>
+            </div>` : ''}
+
+          <form class="pm-form">
+            <input class="pm-input" name="text" autocomplete="off" maxlength="800"
+                   placeholder="${rReplyTo ? `პასუხი ${esc(rReplyTo.name)}-ს…` : 'დაწერე კომენტარი…'}">
+            <button class="cmt-send" type="submit" disabled>გამოქვეყნება</button>
+          </form>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function myId() {
+  const { currentUser } = await import('../lib/supabase.js');
+  return currentUser()?.id ?? null;
+}
+
+function rCommentRow(c, rich, ago, num, depth = 0) {
+  const a = c.author ?? {};
+  return `
+    <div class="cmt${depth ? ' cmt-reply-row' : ''}">
+      <span class="cmt-avatar">
+        ${a.avatar_url ? `<img src="${attr(a.avatar_url)}" alt="">`
+    : esc((a.display_name ?? '?').charAt(0))}
+      </span>
+      <div class="cmt-body">
+        <div class="cmt-line"><b>${esc(a.display_name ?? '')}</b> ${rich(c.body)}</div>
+        <div class="cmt-meta">
+          <span>${esc(ago(c.created_at))}</span>
+          ${c.like_count ? `<span>${num(c.like_count)} მოწონება</span>` : ''}
+          <button type="button" class="cmt-reply" data-rreply="${attr(c.id)}"
+                  data-name="${attr(a.display_name ?? '')}">პასუხი</button>
+          <button type="button" class="cmt-reply" data-rdel="${attr(c.id)}">წაშლა</button>
+        </div>
+        ${c.replies?.length ? `
+          <div class="cmt-replies">
+            ${c.replies.map((r) => rCommentRow(r, rich, ago, num, depth + 1)).join('')}
+          </div>` : ''}
+      </div>
+      <button class="cmt-like act-heart" type="button" data-rclike="${attr(c.id)}"
+              aria-label="მოწონება">${icon('heart', { size: 13 })}</button>
+    </div>`;
+}
+
+function rBind() {
+  rHost.onclick = async (e) => {
+    if (e.target.closest('[data-rclose]')) return rClose();
+
+    const slide = e.target.closest('[data-slide]');
+    if (slide) {
+      const n = (rPost.media ?? []).length;
+      rSlide = (rSlide + Number(slide.dataset.slide) + n) % n;
+      await rPaint(); rBind();
+      return;
+    }
+
+    const rep = e.target.closest('[data-rreply]');
+    if (rep) {
+      if (!allowed('reply')) return;
+      rReplyTo = { id: rep.dataset.rreply, name: rep.dataset.name };
+      await rPaint(); rBind();
+      rHost.querySelector('.pm-input')?.focus();
+      return;
+    }
+
+    const clike = e.target.closest('[data-rclike]');
+    if (clike) {
+      if (!allowed('like')) return;
+      const { toggleCommentLike: tcl } = await import('../lib/posts.js');
+      const on = clike.getAttribute('aria-pressed') !== 'true';
+      try {
+        await tcl(clike.dataset.rclike, on);
+        clike.setAttribute('aria-pressed', String(on));
+        clike.innerHTML = icon('heart', { size: 13, fill: on });
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    const del = e.target.closest('[data-rdel]');
+    if (del) {
+      const { deleteComment: dc } = await import('../lib/posts.js');
+      try { await dc(del.dataset.rdel); await rPaint(); rBind(); }
+      catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    const act = e.target.closest('[data-ract]')?.dataset.ract;
+    if (!act) return;
+
+    if (act === 'cancel-reply') { rReplyTo = null; await rPaint(); rBind(); return; }
+    if (act === 'focus') { rHost.querySelector('.pm-input')?.focus(); return; }
+
+    if (act === 'like') {
+      if (!allowed('like')) return;
+      const { toggleLike: tl } = await import('../lib/posts.js');
+      const btn = e.target.closest('[data-ract="like"]');
+      const on = btn.getAttribute('aria-pressed') !== 'true';
+      try {
+        await tl(rPost.id, on);
+        rPost.like_count = Math.max(0, (rPost.like_count ?? 0) + (on ? 1 : -1));
+        await rPaint(); rBind();
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    if (act === 'delete') {
+      if (!confirm('პოსტი წაიშლება. გავაგრძელო?')) return;
+      const { deletePost: dp } = await import('../lib/posts.js');
+      try {
+        await dp(rPost.id);
+        toast('წაიშალა');
+        rClose();
+        document.dispatchEvent(new CustomEvent('tl:post', { detail: { deleted: rPost.id } }));
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    if (act === 'share') {
+      const url = `${location.origin}/profile.html?u=${rPost.author?.username ?? ''}`;
+      if (navigator.share) navigator.share({ url }).catch(() => {});
+      else { navigator.clipboard?.writeText(url); toast('ბმული დაკოპირდა'); }
+    }
+  };
+
+  const form = rHost.querySelector('.pm-form');
+  if (!form) return;
+  const input = form.querySelector('.pm-input');
+  const send = form.querySelector('.cmt-send');
+
+  input.oninput = () => { send.disabled = !input.value.trim(); };
+
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    if (!allowed('comment')) return;
+    const { addComment: ac } = await import('../lib/posts.js');
+    try {
+      await ac(rPost.id, input.value, rReplyTo?.id ?? null);
+      rReplyTo = null;
+      rPost.comment_count = (rPost.comment_count ?? 0) + 1;
+      await rPaint(); rBind();
+      setTimeout(() => rHost.querySelector('.pm-body')?.scrollTo({ top: 1e6, behavior: 'smooth' }), 60);
+    } catch (err) { toast(err.message, 'error'); }
+  };
+}
+
+function rClose() {
+  rHost.dataset.open = 'false';
+  document.body.style.overflow = '';
+  setTimeout(() => { rHost.hidden = true; }, 240);
+}

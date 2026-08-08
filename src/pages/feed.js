@@ -9,6 +9,7 @@ import '../styles/app.css';
 import { $, esc, attr, delegate, toast } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { allowed } from '../lib/gate.js';
+import { rich as richText } from '../lib/richtext.js';
 import { followSystemTheme } from '../lib/theme.js';
 import { mountTabBar } from '../components/tabbar.js';
 import { mountSearchBox } from '../components/searchbox.js';
@@ -48,6 +49,7 @@ let posts = [];
 
 (async () => {
   const [, , p] = await Promise.all([loadCity(), loadItems(), loadPosts()]);
+  await loadLive();
   posts = p ?? [];
   origin = await locate();
   render();
@@ -69,12 +71,31 @@ function locate() {
   });
 }
 
+let live = [];        // ნამდვილი პოსტები ბაზიდან
+
 function render() {
   const { businesses } = getState();
-  if (!businesses.length) { feedHost.innerHTML = emptyState(EMPTY.noData); return; }
+  if (!businesses.length && !live.length) {
+    feedHost.innerHTML = emptyState(EMPTY.noData);
+    return;
+  }
 
-  all = rankFeed(buildFeed({ origin, limit: 60, posts }));
+  // ნამდვილი პოსტები წინ. ისინი ახალია და ცოცხალი — სატესტო
+  // ჩანაწერებს ზემოთ რომ დარჩენოდნენ, საიტი მკვდარი ჩანდა.
+  all = [...live, ...rankFeed(buildFeed({ origin, limit: 60, posts }))];
   paint();
+}
+
+/** ბაზის პოსტები. ჩავარდნა ფიდს არ ჩერდება — ბანდლი მაინც აჩვენებს. */
+async function loadLive() {
+  try {
+    const { listPosts } = await import('../lib/posts.js');
+    const rows = await listPosts({ scope: 'all', limit: 20 });
+    live = rows.map((r) => ({ type: 'live', post: r, id: `db${r.id}` }));
+  } catch (err) {
+    console.warn('[feed] ცოცხალი პოსტები ვერ ჩამოვიდა:', err.message);
+    live = [];
+  }
 }
 
 function paint() {
@@ -87,7 +108,63 @@ function paint() {
 
 /* ─── ბარათები ─────────────────────────────────────────────── */
 
+/** ბაზის პოსტი — ნამდვილი ავტორი, ნამდვილი ფოტო */
+function liveCard(p) {
+  const a = p.author ?? {};
+  const href = a.username ? `/profile.html?u=${encodeURIComponent(a.username)}` : '#';
+  const first = p.media?.[0];
+  const more = (p.media?.length ?? 0) > 1;
+
+  return `
+  <article class="post" data-live="${attr(p.id)}">
+    <div class="post-head">
+      <a class="post-avatar" href="${href}">
+        ${a.avatar_url ? `<img src="${attr(a.avatar_url)}" alt="">`
+    : esc((a.display_name ?? '?').charAt(0))}
+      </a>
+      <span class="post-who">
+        <a class="post-name" href="${href}">${esc(a.display_name ?? '')}</a>
+        <span class="post-meta">
+          ${esc(ago(p.created_at))}${p.place_name ? ` · ${esc(p.place_name)}` : ''}
+        </span>
+      </span>
+    </div>
+
+    ${first ? `
+      <div class="post-media" data-open-live="${attr(p.id)}">
+        ${first.kind === 'video'
+    ? `<video src="${attr(mediaUrl(first.path))}" muted playsinline></video>`
+    : `<img src="${attr(mediaUrl(first.path))}" alt="" loading="lazy">`}
+        ${more ? `<span class="gcell-multi">${icon('layers', { size: 14 })}</span>` : ''}
+      </div>` : ''}
+
+    <div class="post-actions">
+      <button class="post-act act-heart" type="button" data-liveact="like" data-id="${attr(p.id)}"
+              aria-label="მოწონება">${icon('heart', { size: 25 })}</button>
+      <button class="post-act" type="button" data-open-live="${attr(p.id)}"
+              aria-label="კომენტარი">${icon('bubble', { size: 25 })}</button>
+      <button class="post-act" type="button" data-liveact="share" data-id="${attr(p.id)}"
+              aria-label="გაზიარება">${icon('plane', { size: 25 })}</button>
+    </div>
+
+    <div class="post-body">
+      ${p.like_count ? `<div class="post-likes">${num(p.like_count)} მოწონება</div>` : ''}
+      ${p.body ? `<div class="post-text"><b>${esc(a.display_name ?? '')}</b> ${richText(p.body)}</div>` : ''}
+      ${p.comment_count ? `
+        <button class="post-comments" type="button" data-open-live="${attr(p.id)}">
+          ${num(p.comment_count)} კომენტარის ნახვა
+        </button>` : ''}
+    </div>
+  </article>`;
+}
+
+function mediaUrl(path) {
+  const base = (import.meta.env?.VITE_SUPABASE_URL ?? '').replace(/\/$/, '');
+  return `${base}/storage/v1/object/public/posts/${path}`;
+}
+
 function card(e) {
+  if (e.type === 'live') return liveCard(e.post);
   if (e.type === 'post') return postCard(e);
   if (e.type === 'collection') return collectionCard(e);
   return placeCard(e);
@@ -485,3 +562,48 @@ function skeleton() {
       <div class="post-body"><div class="skel skel-line"></div></div>
     </article>`).join('');
 }
+
+
+/* ─── ნამდვილი პოსტები ─────────────────────────────────────── */
+
+delegate(feedHost, 'click', '[data-open-live]', async (e, node) => {
+  e.preventDefault();
+  const entry = live.find((x) => String(x.post.id) === node.dataset.openLive);
+  if (!entry) return;
+  const { openRemotePost } = await import('../components/post-modal.js');
+  openRemotePost(entry.post);
+});
+
+delegate(feedHost, 'click', '[data-liveact]', async (e, btn) => {
+  e.preventDefault();
+  const act = btn.dataset.liveact;
+  const entry = live.find((x) => String(x.post.id) === btn.dataset.id);
+  if (!entry) return;
+
+  if (act === 'share') {
+    const url = `${location.origin}/profile.html?u=${entry.post.author?.username ?? ''}`;
+    if (navigator.share) navigator.share({ url }).catch(() => {});
+    else { navigator.clipboard?.writeText(url); toast('ბმული დაკოპირდა'); }
+    return;
+  }
+
+  if (act === 'like') {
+    if (!allowed('like')) return;
+    const { toggleLike: tl } = await import('../lib/posts.js');
+    const on = btn.getAttribute('aria-pressed') !== 'true';
+    try {
+      await tl(entry.post.id, on);
+      btn.setAttribute('aria-pressed', String(on));
+      btn.innerHTML = icon('heart', { size: 25, fill: on });
+      btn.classList.add('bump');
+      setTimeout(() => btn.classList.remove('bump'), 350);
+      entry.post.like_count = Math.max(0, (entry.post.like_count ?? 0) + (on ? 1 : -1));
+    } catch (err) { toast(err.message, 'error'); }
+  }
+});
+
+// ახალი პოსტის დადებისას ფიდი თავიდან იკითხება
+document.addEventListener('tl:post', async () => {
+  await loadLive();
+  render();
+});

@@ -1595,3 +1595,142 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
   transition: border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
 }
 .aside-link:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+/* პაროლის წესები */
+.pw-rules { display: flex; flex-wrap: wrap; gap: 6px; }
+.pw-rules span {
+  font-size: 11px; font-weight: 600;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+  transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+}
+.pw-rules span::before { content: '○ '; }
+.pw-rules span.ok {
+  color: #1DA362;
+  border-color: color-mix(in srgb, #1DA362 45%, transparent);
+}
+.pw-rules span.ok::before { content: '✓ '; }
+
+/* ═══════════════════════════════════════════════════════════
+   პროფილი: ჰაილაითები, ტაბები, ბადე
+   ═══════════════════════════════════════════════════════════ */
+
+.pf-web {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--fs-sm); color: var(--accent);
+  text-decoration: none; margin-bottom: var(--sp-3);
+}
+.pf-web:hover { text-decoration: underline; }
+.pf-bio { font-size: var(--fs-sm); line-height: 1.55; margin: 0 0 var(--sp-3); white-space: pre-wrap; }
+
+button.pf-stat { background: none; border: 0; cursor: pointer; font: inherit; color: inherit; padding: 0; }
+button.pf-stat:hover b { color: var(--accent); }
+.pf-stat span { font-size: var(--fs-xs); color: var(--ink-3); }
+
+.pf-highlights {
+  display: flex; gap: var(--sp-4);
+  overflow-x: auto; scrollbar-width: none;
+  padding: var(--sp-4) 0;
+  border-top: var(--bw) solid var(--line);
+}
+.pf-highlights::-webkit-scrollbar { display: none; }
+.hl {
+  flex: none; width: 74px;
+  display: grid; justify-items: center; gap: 6px;
+  background: none; border: 0; cursor: pointer;
+  text-decoration: none; color: inherit; font: inherit;
+}
+.hl-ring {
+  width: 62px; height: 62px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--surface-2);
+  color: var(--ink-3);
+  box-shadow: 0 0 0 1.5px var(--line);
+}
+.hl-add:hover .hl-ring { color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+.hl-name {
+  font-size: 11px; color: var(--ink-2);
+  max-width: 74px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.pf-tabs {
+  display: flex; gap: var(--sp-5);
+  justify-content: center;
+  border-top: var(--bw) solid var(--line);
+}
+.pf-tab {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: 0; cursor: pointer;
+  padding: var(--sp-3) var(--sp-2);
+  font: inherit; font-size: var(--fs-xs); font-weight: 650;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink-3);
+  border-top: 2px solid transparent;
+  margin-top: -1px;
+}
+.pf-tab[aria-current='true'] { color: var(--ink); border-top-color: var(--ink); }
+
+.pf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  margin-top: var(--sp-1);
+}
+@media (min-width: 700px) { .pf-grid { gap: var(--sp-2); } }
+
+.gcell {
+  position: relative;
+  aspect-ratio: 1;
+  border: 0; padding: 0; cursor: pointer;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.gcell img, .gcell video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gcell-text {
+  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical;
+  overflow: hidden;
+  padding: var(--sp-3);
+  font-size: var(--fs-xs); line-height: 1.4;
+  color: var(--ink-2); text-align: start;
+}
+.gcell-multi {
+  position: absolute; top: 7px; inset-inline-end: 7px;
+  color: #fff;
+  filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.5));
+}
+.gcell-over {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center; gap: var(--sp-4);
+  background: rgb(0 0 0 / 0.4);
+  color: #fff; font-size: var(--fs-sm); font-weight: 700;
+  opacity: 0;
+  transition: opacity var(--t-fast) var(--ease);
+}
+.gcell-over span { display: inline-flex; align-items: center; gap: 5px; }
+.gcell:hover .gcell-over { opacity: 1; }
+@media (hover: none) { .gcell-over { display: none; } }
+
+/* კარუსელის ისრები ფანჯარაში */
+.pm-nav {
+  position: absolute; top: 50%; translate: 0 -50%;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: rgb(255 255 255 / 0.85);
+  color: #111; cursor: pointer;
+}
+.pm-prev { inset-inline-start: 10px; }
+.pm-next { inset-inline-end: 10px; }
+.pm-dots {
+  position: absolute; bottom: 10px; left: 50%; translate: -50% 0;
+  display: flex; gap: 5px;
+}
+.pm-dots i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgb(255 255 255 / 0.5);
+}
+.pm-dots i.on { background: #fff; }
+.pm-avatar img, .cmt-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }

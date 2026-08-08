@@ -23,7 +23,7 @@ import { currentTheme, setTheme } from '../lib/theme.js';
 import { HAS_BACKEND } from '../lib/config.js';
 import {
   whenAuthReady, currentUser, signInWithEmail, signUpWithEmail,
-  signInWithGoogle, resetPassword, readableError, supa,
+  resetPassword, readableError, supa,
 } from '../lib/supabase.js';
 
 setTheme(currentTheme(), { persist: false });
@@ -99,6 +99,19 @@ function paint() {
 
         ${isUp ? `
           <label class="auth-field">
+            <span>გაიმეორე პაროლი</span>
+            <input class="input" type="password" name="password2" required
+                   autocomplete="new-password" placeholder="ისევ იგივე">
+          </label>
+
+          <div class="pw-rules" data-rules hidden>
+            <span data-rule="len">8 სიმბოლო</span>
+            <span data-rule="up">დიდი ასო</span>
+            <span data-rule="num">ციფრი</span>
+            <span data-rule="same">ემთხვევა</span>
+          </div>
+
+          <label class="auth-field">
             <span>ნიკი <i class="auth-opt">არასავალდებულო</i></span>
             <span class="auth-at">
               <i>@</i>
@@ -119,16 +132,6 @@ function paint() {
       ${isForgot ? `
         <button class="auth-link" type="button" data-mode="in">← შესვლას ვბრუნდები</button>
       ` : `
-        <div class="auth-or"><span>ან</span></div>
-        <button class="btn btn-block auth-google" type="button" data-google>
-          <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true">
-            <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.2-.4-4.7H24v8.9h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.2-3.8 6.6-9.5 6.6-16.3z"/>
-            <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-7.1-5.5c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.5-3.8-12.2-9H4.5v5.7C8.1 41.2 15.5 46 24 46z"/>
-            <path fill="#FBBC05" d="M11.8 28.3c-.4-1.3-.7-2.7-.7-4.3s.3-2.9.7-4.3v-5.7H4.5C2.9 17.2 2 20.5 2 24s.9 6.8 2.5 10l7.3-5.7z"/>
-            <path fill="#EA4335" d="M24 10.7c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.1 29.9 2 24 2 15.5 2 8.1 6.8 4.5 14l7.3 5.7c1.7-5.2 6.5-9 12.2-9z"/>
-          </svg>
-          Google-ით ${isUp ? 'რეგისტრაცია' : 'შესვლა'}
-        </button>
         ${isUp ? '' : '<button class="auth-link" type="button" data-mode="forgot">პაროლი დაგავიწყდა?</button>'}
       `}
     </div>
@@ -164,9 +167,6 @@ function bind() {
       return;
     }
 
-    if (e.target.closest('[data-google]')) {
-      try { await signInWithGoogle(); } catch (ex) { show(err, readableError(ex)); }
-    }
   };
 
   // ნიკის თავისუფლება წერისასვე — ბოლოს „დაკავებულია" ყველაზე გამაღიზიანებელია
@@ -198,6 +198,23 @@ function bind() {
     });
   }
 
+  // პაროლის წესები წერისასვე ინთება. ბოლოს „არ ვარგა" და
+  // თავიდან დაწყება ყველაზე გამაღიზიანებელია რეგისტრაციაში.
+  const pw = form.querySelector('input[name="password"]');
+  const pw2 = form.querySelector('input[name="password2"]');
+  const rules = form.querySelector('[data-rules]');
+  const recheck = () => {
+    if (!rules) return;
+    rules.hidden = false;
+    const v = pw.value;
+    const ok = checkPassword(v, pw2?.value ?? '');
+    for (const [key, good] of Object.entries(ok)) {
+      rules.querySelector(`[data-rule="${key}"]`)?.classList.toggle('ok', good);
+    }
+  };
+  pw?.addEventListener('input', recheck);
+  pw2?.addEventListener('input', recheck);
+
   form.onsubmit = async (e) => {
     e.preventDefault();
     if (busy) return;
@@ -218,7 +235,9 @@ function bind() {
       return;
     }
 
-    if (password.length < 6) return show(err, 'პაროლი მინიმუმ 6 სიმბოლო უნდა იყოს');
+    if (mode === 'in' && password.length < 6) {
+      return show(err, 'პაროლი მინიმუმ 6 სიმბოლო უნდა იყოს');
+    }
 
     if (mode === 'in') {
       setBusy(true, form);
@@ -232,6 +251,13 @@ function bind() {
     const last = String(fd.get('last_name') ?? '').trim();
     const birth = String(fd.get('birth_date') ?? '');
     const username = String(fd.get('username') ?? '').toLowerCase();
+    const password2 = String(fd.get('password2') ?? '');
+
+    const ok = checkPassword(password, password2);
+    if (!ok.len)  return show(err, 'პაროლი მინიმუმ 8 სიმბოლო უნდა იყოს');
+    if (!ok.up)   return show(err, 'პაროლში დიდი ასო უნდა იყოს');
+    if (!ok.num)  return show(err, 'პაროლში ციფრი უნდა იყოს');
+    if (!ok.same) return show(err, 'პაროლები არ ემთხვევა');
 
     if (!first) return show(err, 'სახელი აუცილებელია');
     if (!last) return show(err, 'გვარი აუცილებელია');
@@ -271,6 +297,22 @@ function bind() {
 }
 
 /* ─────────────────────────────────────────────────────────── */
+
+/**
+ * პაროლის სიმტკიცე.
+ *
+ * დიდ ასოს კონკრეტულად პირველ სიმბოლოზე არ ვითხოვთ — ეს არაფერს
+ * მატებს დაცვას და მხოლოდ აღიზიანებს. მნიშვნელოვანია, რომ დიდი
+ * ასო და ციფრი საერთოდ იყოს: სწორედ ეს ზრდის ვარიანტების რიცხვს.
+ */
+function checkPassword(a, b) {
+  return {
+    len:  a.length >= 8,
+    up:   /[A-ZА-ЯЁ]/.test(a),
+    num:  /[0-9]/.test(a),
+    same: a.length > 0 && a === b,
+  };
+}
 
 /** ასაკი წლებში მოცემულ თარიღზე, ან null თუ თარიღი უვარგისია */
 function ageOn(iso) {
