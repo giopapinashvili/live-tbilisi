@@ -2051,3 +2051,15 @@ a.actor-item { text-decoration: none; }
   margin: 0 0 var(--sp-3);
   padding: 0 var(--sp-1);
 }
+
+/* ძებნაში ხალხის ბარათი */
+.prow-card {
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  text-decoration: none; color: inherit;
+  transition: border-color var(--t-fast) var(--ease);
+}
+.prow-card:hover { border-color: var(--line-strong); }
