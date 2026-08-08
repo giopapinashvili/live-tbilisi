@@ -48,8 +48,14 @@ delegate(results, 'click', '[data-term]', (e, node) => {
   run(node.dataset.term);
 });
 
+// ბოლო ძებნა. params-ს ვერ ვენდობით: ის მისამართის სნეპშოტია
+// და ახალ ძებნაზე ძველ მნიშვნელობას აბრუნებდა — შედეგად ჩემივე
+// დაცვა დაგვიანებული პასუხისგან ყოველთვის ჭრიდა ხალხის სიას.
+let lastQuery = '';
+
 function run(term) {
   const q = term.trim();
+  lastQuery = q;
   params.set({ q: q || null });
   setTitle(q ? `„${q}" — ძებნა · თბილისი LIVE` : 'ძებნა — თბილისი LIVE');
 
@@ -72,11 +78,13 @@ function run(term) {
     : '';
 
   if (!total) {
-    results.innerHTML = emptyState({
+    // ხალხი ცალკე მოდის და შეიძლება მაინც მოიძებნოს — ამიტომ
+    // „ვერ მოიძებნა" ცალკე ბლოკშია და მას არ შლის
+    results.innerHTML = `<div id="none-yet">${emptyState({
       icon: 'search',
       title: `„${q}" ვერ მოიძებნა`,
       text: 'სცადე სხვა სიტყვა. ბაზაში ჯერ მხოლოდ ნაძალადევის რაიონია.',
-    });
+    })}</div>`;
     return;
   }
 
@@ -157,7 +165,7 @@ async function findPeople(q) {
     if (error || !data?.length) return;
 
     // შედეგი შეიძლება დაგვიანდეს — თუ ძებნა შეიცვალა, აღარ ვსვამთ
-    if ((params.get('q') ?? '').trim() !== q) return;
+    if (lastQuery !== q) return;
 
     const html = `
       <section class="sec" id="people-sec">
@@ -167,6 +175,9 @@ async function findPeople(q) {
           ${data.map(personRow).join('')}
         </div>
       </section>`;
+
+    // თუ სხვა შედეგი არ იყო, „ვერ მოიძებნა" აღარ გვჭირდება
+    document.getElementById('none-yet')?.remove();
 
     const old = document.getElementById('people-sec');
     if (old) old.outerHTML = html;

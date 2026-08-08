@@ -2063,3 +2063,34 @@ a.actor-item { text-decoration: none; }
   transition: border-color var(--t-fast) var(--ease);
 }
 .prow-card:hover { border-color: var(--line-strong); }
+
+/* ═══════════════════════════════════════════════════════════
+   ავატარი ყოველთვის მრგვალია
+   border-radius მშობელზე ეწერა, overflow კი არა — ამიტომ
+   <img> კვადრატად გადმოდიოდა და ზემოდან აწვა.
+   ═══════════════════════════════════════════════════════════ */
+
+.post-avatar,
+.pm-avatar,
+.cmt-avatar,
+.actor-face,
+.tab-face,
+.hl-ring,
+.story-ring,
+.pf-avatar { overflow: hidden; }
+
+.post-avatar img,
+.pm-avatar img,
+.cmt-avatar img,
+.actor-face img,
+.tab-face img,
+.pf-avatar img,
+.story-ring img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+/* ავატარი ბმულია — ხაზი არ უნდა ჰქონდეს */
+a.post-avatar, a.pm-avatar, a.cmt-avatar, a.actor-face { text-decoration: none; }
