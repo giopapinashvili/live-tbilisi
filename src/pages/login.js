@@ -9,6 +9,14 @@
  * და ვერც პროფილის მისამართს დავადებთ. მერე ყოველთვის შეიცვლება.
  */
 
+// სტილები. ეს გვერდი განზრახ არ იძახებს boot()-ს — მას ჰედერი
+// და ტაბები არ სჭირდება — მაგრამ CSS სწორედ იქიდან შემოდიოდა.
+// ერთხელ უკვე გამომრჩა და გვერდი შიშველი აიწყო.
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/components.css';
+import '../styles/app.css';
+
 import { esc, toast } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { currentTheme, setTheme } from '../lib/theme.js';

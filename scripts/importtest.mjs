@@ -161,10 +161,38 @@ function check(file) {
   }
 }
 
+/* ─── სტილები ──────────────────────────────────────────────── */
+
+/**
+ * ყოველი გვერდი სტილს ან boot()-იდან იღებს, ან პირდაპირ.
+ *
+ * ესეც ნანახი შეცდომაა: login.js-მა boot() არ გამოიძახა (ჰედერი
+ * არ სჭირდებოდა) და გვერდი შიშველი აიწყო — მუშაობდა, მაგრამ
+ * უსტილოდ. აწყობა ასეთს არ იჭერს, რადგან შეცდომა არ არის.
+ */
+function checkStyles() {
+  for (const file of fs.readdirSync(ROOT).filter((f) => f.endsWith('.html'))) {
+    const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    const m = html.match(/<script[^>]+src=["']\/([^"']+\.js)["']/);
+    if (!m) continue;
+
+    const entry = path.join(ROOT, m[1]);
+    if (!fs.existsSync(entry)) { fail(`${file} — სკრიპტი ${m[1]} არ არსებობს`); continue; }
+
+    const src = fs.readFileSync(entry, 'utf8');
+    const hasBoot = /_boot\.js['"]/.test(src);
+    const hasCss = /\.css['"]/.test(src);
+    if (!hasBoot && !hasCss) {
+      fail(`${file} — ${m[1]} არც boot()-ს იძახებს და არც CSS-ს იღებს (გვერდი უსტილოდ აიწყობა)`);
+    }
+  }
+}
+
 /* ─── გაშვება ──────────────────────────────────────────────── */
 
 console.log('\nიმპორტები');
 walk(SRC);
+checkStyles();
 
 console.log(`\n  ${files} ფაილი, ${checked} იმპორტი`);
 if (problems) {
