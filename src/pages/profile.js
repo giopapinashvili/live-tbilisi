@@ -245,9 +245,22 @@ delegate(root, 'click', '[data-act]', async (e, btn) => {
     return;
   }
 
-  if (act === 'edit') toast('რედაქტირება მალე დაემატება');
+  if (act === 'edit') {
+    const { openProfileEdit } = await import('../components/profile-edit.js');
+    openProfileEdit(who, async () => {
+      who = wanted ? await profileByUsername(wanted) : currentProfile();
+      await paint();
+    });
+    return;
+  }
+
+  if (act === 'followers' || act === 'following') {
+    const { openPeople } = await import('../components/profile-edit.js');
+    openPeople(who.id, act);
+    return;
+  }
+
   if (act === 'message') toast('მიმოწერა მალე დაემატება');
-  if (act === 'followers' || act === 'following') toast('სია მალე დაემატება');
   if (act === 'new-highlight') toast('ჰაილაითები მალე დაემატება');
 });
 
