@@ -139,6 +139,9 @@ function paint() {
       ${biz.phone?.length
     ? `<a class="btn" href="tel:${attr(biz.phone[0])}" data-act="call">დარეკვა</a>`
     : '<button class="btn" type="button" disabled>ტელეფონი უცნობია</button>'}
+      <button class="btn" type="button" data-act="checkin">
+        ${icon('pin', { size: 16 })} აქ ვარ
+      </button>
       <button class="btn btn-icon act-heart" type="button" data-act="save" aria-pressed="${isSaved(biz.id)}"
               aria-label="შენახვა">${icon('heart', { size: 18, fill: isSaved(biz.id) })}</button>
     </div>
@@ -452,3 +455,34 @@ function openReport() {
     }
   };
 }
+
+
+/* ─── ჩექინი ───────────────────────────────────────────────── */
+
+delegate(document, 'click', '[data-act="checkin"]', async (e, btn) => {
+  e.preventDefault();
+
+  const { allowed } = await import('../lib/gate.js');
+  if (!allowed('checkin')) return;
+
+  const slug = biz?.slug ?? biz?.id;
+  if (!slug) return;
+
+  btn.disabled = true;
+  try {
+    const { checkIn } = await import('../lib/checkin.js');
+    const done = await checkIn(slug);
+    if (done) {
+      btn.innerHTML = `${icon('check', { size: 16 })} მონიშნულია`;
+      toast('ჩექინი გაკეთდა');
+      record('open', { business: biz });
+    } else {
+      // ერთ საათში ერთხელ — თორემ ერთი დაჭერით ათი ჩანაწერი იქმნება
+      toast('ამ ადგილზე ცოტა ხნის წინ უკვე მოინიშნე');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    toast(err.message, 'error');
+    btn.disabled = false;
+  }
+});

@@ -38,7 +38,7 @@ export function rich(text) {
 
   // 4. ჰეშთეგი
   html = html.replace(TAG, (_m, tag) =>
-    `<a class="rt-tag" href="/search.html?tag=${encodeURIComponent(tag.toLowerCase())}">#${tag}</a>`);
+    `<a class="rt-tag" href="/explore.html?tag=${encodeURIComponent(tag.toLowerCase())}">#${tag}</a>`);
 
   return html;
 }

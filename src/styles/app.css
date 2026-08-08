@@ -2094,3 +2094,24 @@ a.actor-item { text-decoration: none; }
 
 /* ავატარი ბმულია — ხაზი არ უნდა ჰქონდეს */
 a.post-avatar, a.pm-avatar, a.cmt-avatar, a.actor-face { text-decoration: none; }
+
+/* ═══════════════════════════════════════════════════════════
+   აღმოჩენა და ჰეშთეგი
+   ═══════════════════════════════════════════════════════════ */
+
+.ex-head {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-5) 0 var(--sp-4);
+}
+.ex-head h1 { font-family: var(--font-display); font-size: var(--fs-lg); margin: 0; }
+.ex-head p { margin: 2px 0 0; font-size: var(--fs-sm); }
+.ex-tag {
+  width: 52px; height: 52px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.ex-tags { margin-bottom: var(--sp-4); }
+.ex-tags .eyebrow { margin-bottom: var(--sp-2); }
+.ex-tags .chip b { color: var(--ink-3); font-weight: 600; margin-inline-start: 3px; }

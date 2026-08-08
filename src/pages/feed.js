@@ -434,6 +434,14 @@ function renderStories() {
 
 function renderAside() {
   const s = stats();
+  const exploreCard = `
+    <a class="aside-card aside-link" href="/explore.html">
+      <h3>აღმოჩენა</h3>
+      <p class="dim" style="font-size:var(--fs-xs); margin:0">
+        ის, რასაც ჯერ არ მისდევ — და კვირის თეგები
+      </p>
+    </a>`;
+
   const promoCard = `
     <a class="aside-card aside-link" href="/promos.html">
       <h3>აქციები და ფასდაკლებები</h3>
@@ -442,7 +450,7 @@ function renderAside() {
       </p>
     </a>`;
   const m = maturity();
-  $('#aside').innerHTML = `${promoCard}
+  $('#aside').innerHTML = `${exploreCard}${promoCard}
     <div class="aside-card">
       <h3>კატეგორიები</h3>
       ${CATEGORIES.slice(0, 8).map((c) => `

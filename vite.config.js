@@ -27,6 +27,7 @@ export default defineConfig({
         login: resolve('login.html'),
         notifications: resolve('notifications.html'),
         createPage: resolve('create-page.html'),
+        explore: resolve('explore.html'),
         notfound: resolve('404.html'),
       },
       output: {
