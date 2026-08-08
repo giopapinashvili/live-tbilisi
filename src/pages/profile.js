@@ -24,6 +24,7 @@ import {
   profileByUsername, followCounts, postsByAuthor,
   amFollowing, toggleFollow,
 } from '../lib/posts.js';
+import { loadActors, activeActor, actorId } from '../lib/actor.js';
 
 boot({ active: 'profile', canonical: false });
 
@@ -46,7 +47,10 @@ let posts = [];
 
   root.innerHTML = '<div class="panel"><div class="skel skel-line"></div></div>';
 
-  who = wanted ? await profileByUsername(wanted) : currentProfile();
+  // მისამართის გარეშე — მოქმედი სახე, არა ყოველთვის ადამიანი.
+  // გვერდზე გადართული ხარ, პროფილიც გვერდისა უნდა იყოს.
+  await loadActors();
+  who = wanted ? await profileByUsername(wanted) : (activeActor() ?? currentProfile());
 
   if (!who) {
     root.innerHTML = emptyState({
@@ -57,7 +61,7 @@ let posts = [];
     return;
   }
 
-  mine = who.id === currentUser()?.id;
+  mine = who.id === actorId();
   await paint();
   if (mine) syncProfile();
 })();
@@ -248,7 +252,8 @@ delegate(root, 'click', '[data-act]', async (e, btn) => {
   if (act === 'edit') {
     const { openProfileEdit } = await import('../components/profile-edit.js');
     openProfileEdit(who, async () => {
-      who = wanted ? await profileByUsername(wanted) : currentProfile();
+      await loadActors({ force: true });
+      who = wanted ? await profileByUsername(wanted) : (activeActor() ?? currentProfile());
       await paint();
     });
     return;
@@ -292,7 +297,7 @@ delegate(root, 'change', '#upfile', async (e, input) => {
     const m = await upload(file, { bucket: 'avatars' });
     const url = publicUrlSync(m.path, 'avatars');
     await updateProfile(target === 'cover' ? { cover_url: url } : { avatar_url: url });
-    who = currentProfile();
+    who = activeActor() ?? currentProfile();
     await paint();
     toast(target === 'cover' ? 'გარეკანი შეიცვალა' : 'ფოტო შეიცვალა');
   } catch (err) {

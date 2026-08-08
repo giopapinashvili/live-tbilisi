@@ -67,10 +67,18 @@ export async function openActorMenu(anchor) {
   const onDoc = (e) => {
     const pick = e.target.closest('[data-actor]');
     if (pick) {
+      if (pick.dataset.actor === actorId()) { close(); return; }
       switchTo(pick.dataset.actor);
-      document.dispatchEvent(new CustomEvent('tl:actor'));
       close();
       document.removeEventListener('click', onDoc, true);
+
+      // სრული გადატვირთვა განზრახია. გადართვა სხვა ანგარიშზე
+      // შესვლას უდრის: ფიდი, შეტყობინებები, პროფილი, შენახული —
+      // ყველაფერი სხვაა. ცალ-ცალკე რომ განვაახლოთ, ერთი კუთხე
+      // აუცილებლად დარჩება ძველი და ადამიანი დაიბნევა.
+      const back = location.pathname.startsWith('/profile')
+        ? '/profile.html' : location.href;
+      location.replace(back);
       return;
     }
     if (menu && !menu.contains(e.target)) {

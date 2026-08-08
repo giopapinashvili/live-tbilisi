@@ -32,6 +32,9 @@ const SELECT = `
  *   'following' — მხოლოდ ვისაც მისდევ
  */
 export async function listPosts({ scope = 'all', limit = 12, before = null } = {}) {
+  // ფიდი მოქმედ სახეზეა მიბმული: გვერდზე გადართვისას სხვა
+  // გამოწერები მოქმედებს და ლენტაც სხვა ხდება — ისევე, როგორც
+  // ცალკე ანგარიშზე შესვლისას.
   if (!HAS_BACKEND) return [];
 
   const sb = await supa();
@@ -395,29 +398,33 @@ export async function mentionable(term, limit = 8) {
    ───────────────────────────────────────────────────────────── */
 
 export async function notifications(limit = 40) {
-  if (!HAS_BACKEND || !currentUser()) return [];
+  const me = actorId();
+  if (!HAS_BACKEND || !me) return [];
   const sb = await supa();
   const { data, error } = await sb.from('notifications')
     .select('*, actor:profiles!notifications_actor_id_fkey ( username, display_name, avatar_url )')
+    .eq('user_id', me)
     .order('created_at', { ascending: false }).limit(limit);
   if (error) { console.warn('[notif]', error.message); return []; }
   return data ?? [];
 }
 
 export async function unreadCount() {
-  if (!HAS_BACKEND || !currentUser()) return 0;
+  const me = actorId();
+  if (!HAS_BACKEND || !me) return 0;
   const sb = await supa();
   const { count } = await sb.from('notifications')
-    .select('*', { count: 'exact', head: true }).is('read_at', null);
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', me).is('read_at', null);
   return count ?? 0;
 }
 
 export async function markAllRead() {
-  const me = currentUser();
+  const me = actorId();
   if (!me) return;
   const sb = await supa();
   await sb.from('notifications').update({ read_at: new Date().toISOString() })
-    .eq('user_id', me.id).is('read_at', null);
+    .eq('user_id', me).is('read_at', null);
 }
 
 export { currentProfile };
