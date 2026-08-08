@@ -39,6 +39,21 @@ let all = [];
 let shown = PAGE;
 let origin = null;
 
+/**
+ * ორი ლენტა, როგორც ფეისბუქზე:
+ *
+ *   following — ვისაც მისდევს მოქმედი სახე. გვერდზე გადართვისას
+ *               გვერდის გამოწერები მოქმედებს და ლენტაც სხვაა.
+ *   discover  — ყველაფერი. ახალი მომხმარებლისთვის და მაშინ,
+ *               როცა გამოწერები ჯერ არაა.
+ *
+ * არჩევანი მოქმედ სახეზეა მიბმული: შენ „გამოწერილს" ხედავ,
+ * გვერდზე კი შეიძლება „აღმოჩენას" — და ორივე დამახსოვრდება.
+ */
+const SCOPE_KEY = 'tl.feed.scope';
+let scope = 'following';
+let emptyFollowing = false;
+
 mountSearchBox($('#feed-search'), {
   placeholder: 'შაურმა, ცემენტი, აფთიაქი…',
   onSubmit: (t) => { if (t.trim()) location.href = `/search.html?q=${encodeURIComponent(t.trim())}`; },
@@ -49,14 +64,36 @@ feedHost.innerHTML = skeleton();
 let posts = [];
 
 (async () => {
+  const { loadActors, actorId } = await import('../lib/actor.js');
+  await loadActors();
+  scope = readScope(actorId());
+
   const [, , p] = await Promise.all([loadCity(), loadItems(), loadPosts()]);
   await loadLive();
   posts = p ?? [];
   origin = await locate();
+  renderTabs();
   render();
   renderStories();
   renderAside();
 })();
+
+/** არჩევანი თითო სახეზე ცალკე ინახება */
+function readScope(id) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SCOPE_KEY) ?? '{}');
+    return saved[String(id ?? '')] ?? 'following';
+  } catch { return 'following'; }
+}
+
+async function saveScope(v) {
+  try {
+    const { actorId } = await import('../lib/actor.js');
+    const saved = JSON.parse(localStorage.getItem(SCOPE_KEY) ?? '{}');
+    saved[String(actorId() ?? '')] = v;
+    localStorage.setItem(SCOPE_KEY, JSON.stringify(saved));
+  } catch { /* private რეჟიმი */ }
+}
 
 /** მდებარეობა — თუ უარს იტყვის, ქალაქის ცენტრით ვმუშაობთ */
 function locate() {
@@ -87,16 +124,61 @@ function render() {
   paint();
 }
 
-/** ბაზის პოსტები. ჩავარდნა ფიდს არ ჩერდება — ბანდლი მაინც აჩვენებს. */
+/**
+ * ბაზის პოსტები. ჩავარდნა ფიდს არ ჩერდება — ბანდლი მაინც აჩვენებს.
+ *
+ * თუ „გამოწერილი" ცარიელია, ჩუმად აღმოჩენაზე ვდგებით. ცარიელი
+ * ეკრანი ახალ მომხმარებელს აბრუნებს; ჯობია რაღაც აჩვენო და
+ * გვერდით მიუთითო, რომ ეს ჯერ არჩეული არაა.
+ */
 async function loadLive() {
+  emptyFollowing = false;
   try {
     const { listPosts } = await import('../lib/posts.js');
-    const rows = await listPosts({ scope: 'all', limit: 20 });
+    let rows = await listPosts({ scope, limit: 20 });
+
+    if (scope === 'following' && !rows.length) {
+      emptyFollowing = true;
+      rows = await listPosts({ scope: 'all', limit: 20 });
+    }
+
     live = rows.map((r) => ({ type: 'live', post: r, id: `db${r.id}` }));
   } catch (err) {
     console.warn('[feed] ცოცხალი პოსტები ვერ ჩამოვიდა:', err.message);
     live = [];
   }
+}
+
+/** ვისი სახელით ვუყურებ და რომელ ლენტას */
+async function renderTabs() {
+  const host = $('#feed-tabs');
+  if (!host) return;
+
+  const { activeActor, isSelf } = await import('../lib/actor.js');
+  const me = activeActor();
+  const asPage = me && !isSelf(me);
+
+  host.innerHTML = `
+    ${asPage ? `
+      <div class="feed-as">
+        <span class="actor-face">${me.avatar_url
+    ? `<img src="${attr(me.avatar_url)}" alt="">`
+    : esc((me.display_name ?? '?').charAt(0))}</span>
+        <span><b>${esc(me.display_name)}</b>-ის სახელით ხედავ და მოქმედებ</span>
+      </div>` : ''}
+
+    <div class="feed-scope" role="tablist">
+      <button type="button" role="tab" data-scope="following"
+              aria-selected="${scope === 'following'}">გამოწერილი</button>
+      <button type="button" role="tab" data-scope="discover"
+              aria-selected="${scope === 'discover'}">აღმოჩენა</button>
+    </div>
+
+    ${emptyFollowing && scope === 'following' ? `
+      <p class="feed-note">
+        ${asPage ? 'ამ გვერდს' : 'შენ'} ჯერ არავინ გამოგიწერია — ამიტომ
+        ყველაფერს გიჩვენებ. გამოიწერე ადგილები და ლენტა შენებურად დალაგდება.
+      </p>` : ''}`;
 }
 
 function paint() {
@@ -606,4 +688,21 @@ delegate(feedHost, 'click', '[data-liveact]', async (e, btn) => {
 document.addEventListener('tl:post', async () => {
   await loadLive();
   render();
+});
+
+
+/* ─── ლენტის გადართვა ──────────────────────────────────────── */
+
+delegate(document, 'click', '[data-scope]', async (e, btn) => {
+  const next = btn.dataset.scope;
+  if (next === scope) return;
+  scope = next;
+  await saveScope(scope);
+
+  feedHost.innerHTML = skeleton();
+  await loadLive();
+  await renderTabs();
+  shown = PAGE;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 });

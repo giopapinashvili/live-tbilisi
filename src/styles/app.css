@@ -2004,3 +2004,50 @@ a.actor-item { text-decoration: none; }
 }
 .actor-item.danger b { color: var(--danger, #E0245E); }
 .actor-item.danger:hover { background: color-mix(in srgb, var(--danger, #E0245E) 10%, transparent); }
+
+/* ═══════════════════════════════════════════════════════════
+   ლენტის გადამრთველი
+   ═══════════════════════════════════════════════════════════ */
+
+.feed-as {
+  display: flex; align-items: center; gap: var(--sp-2);
+  background: var(--accent-soft);
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  margin-bottom: var(--sp-3);
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+}
+.feed-as .actor-face { width: 24px; height: 24px; font-size: 11px; }
+
+.feed-scope {
+  display: flex; gap: 4px;
+  background: var(--surface-2);
+  border-radius: var(--r-pill);
+  padding: 3px;
+  margin-bottom: var(--sp-3);
+}
+.feed-scope button {
+  flex: 1;
+  border: 0; cursor: pointer;
+  background: none;
+  border-radius: var(--r-pill);
+  padding: 7px 12px;
+  font: inherit; font-size: var(--fs-sm); font-weight: 600;
+  color: var(--ink-3);
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.feed-scope button:hover { color: var(--ink-2); }
+.feed-scope button[aria-selected='true'] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+}
+
+.feed-note {
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+  line-height: 1.5;
+  margin: 0 0 var(--sp-3);
+  padding: 0 var(--sp-1);
+}
