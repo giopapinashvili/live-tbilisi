@@ -1230,7 +1230,11 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
 .actor-btn > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .actor-menu {
-  position: absolute; z-index: var(--z-pop, 60);
+  /* fixed და არა absolute: მდებარეობას getBoundingClientRect-ით
+     ვთვლით, ის კი ეკრანის მიმართ ზომავს. absolute-ით მენიუ
+     გადაფურცლულ გვერდზე ეკრანს გარეთ ხვდებოდა და ღილაკი
+     „არაფერს აკეთებდა". */
+  position: fixed; z-index: var(--z-pop, 60);
   min-width: 250px;
   background: var(--surface);
   border: var(--bw) solid var(--line);
@@ -1258,7 +1262,7 @@ a.post-avatar { text-decoration: none; font-size: 18px; }
 
 /* @ მონიშვნის შემოთავაზება კომპოზერში */
 .mention-pop {
-  position: absolute; z-index: var(--z-pop, 60);
+  position: fixed; z-index: var(--z-pop, 60);
   width: 280px; max-height: 240px; overflow-y: auto;
   background: var(--surface);
   border: var(--bw) solid var(--line);

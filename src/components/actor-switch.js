@@ -31,11 +31,21 @@ export async function openActorMenu(anchor) {
   close();
   menu = el('div', { class: 'actor-menu' });
 
+  // მდებარეობა ეკრანის მიმართ (position: fixed).
+  // ტაბები ხან ქვევითაა, ხან მარცხნივ — ამიტომ ვამოწმებთ,
+  // ქვემოთ ჩაეტევა თუ არა, და საჭიროებისას ზემოთ ვხსნით.
   const r = anchor.getBoundingClientRect();
   const w = 260;
-  // ეკრანიდან რომ არ გავიდეს — მარჯვნივ და ქვევით ვამოწმებთ
-  menu.style.left = `${Math.min(r.left, window.innerWidth - w - 10)}px`;
-  menu.style.top = `${Math.min(r.bottom + 6, window.innerHeight - 320)}px`;
+  const h = Math.min(340, 120 + list.length * 56);
+
+  const left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+  const below = r.bottom + 6;
+  const top = below + h < window.innerHeight ? below : Math.max(8, r.top - h - 6);
+
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+  menu.style.maxHeight = `${h}px`;
+  menu.style.overflowY = 'auto';
 
   menu.innerHTML = `
     <div class="actor-head">ვისი სახელით</div>
@@ -72,13 +82,17 @@ export async function openActorMenu(anchor) {
       close();
       document.removeEventListener('click', onDoc, true);
 
-      // სრული გადატვირთვა განზრახია. გადართვა სხვა ანგარიშზე
-      // შესვლას უდრის: ფიდი, შეტყობინებები, პროფილი, შენახული —
-      // ყველაფერი სხვაა. ცალ-ცალკე რომ განვაახლოთ, ერთი კუთხე
-      // აუცილებლად დარჩება ძველი და ადამიანი დაიბნევა.
-      const back = location.pathname.startsWith('/profile')
-        ? '/profile.html' : location.href;
-      location.replace(back);
+      // სრული გადატვირთვა განზრახია: გადართვა სხვა ანგარიშზე
+      // შესვლას უდრის და ყველა კუთხე უნდა შეიცვალოს.
+      //
+      // reload() და არა replace(location.href) — იმავე მისამართზე
+      // replace ბრაუზერს გვერდს არ ატვირთვინებს და გადართვა
+      // უშედეგო ჩანდა. სწორედ ეს ხარვეზი იყო.
+      if (location.pathname.startsWith('/profile')) {
+        location.href = '/profile.html';
+      } else {
+        location.reload();
+      }
       return;
     }
     if (menu && !menu.contains(e.target)) {

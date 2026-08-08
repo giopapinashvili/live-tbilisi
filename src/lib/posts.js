@@ -419,6 +419,23 @@ export async function unreadCount() {
   return count ?? 0;
 }
 
+/** ერთი შეტყობინება წაკითხულად */
+export async function markRead(id) {
+  const sb = await supa();
+  await sb.from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .eq('id', id).is('read_at', null);
+}
+
+/** ერთი პოსტი id-ით — შეტყობინებიდან გახსნისთვის */
+export async function postById(id) {
+  if (!HAS_BACKEND) return null;
+  const sb = await supa();
+  const { data, error } = await sb.from('posts').select(SELECT).eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  return shape(data);
+}
+
 export async function markAllRead() {
   const me = actorId();
   if (!me) return;

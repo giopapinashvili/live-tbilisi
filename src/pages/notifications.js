@@ -5,13 +5,13 @@
  * და ვერც დაავიწყდება. აქ მხოლოდ ჩვენებაა.
  */
 
-import { boot, $, esc, delegate } from './_boot.js';
+import { boot, $, esc, delegate, toast } from './_boot.js';
 import { icon } from '../lib/icons.js';
 import { ago } from '../lib/format.js';
 import { emptyState } from '../components/cards.js';
 import { guestWall } from '../lib/gate.js';
 import { whenAuthReady } from '../lib/supabase.js';
-import { notifications, markAllRead } from '../lib/posts.js';
+import { notifications, markAllRead, markRead, postById } from '../lib/posts.js';
 
 boot({ active: 'notifications', canonical: false });
 
@@ -67,13 +67,21 @@ async function paint() {
 function row(n) {
   const who = n.actor?.display_name ?? 'ვიღაცამ';
   const handle = n.actor?.username ?? '';
-  const href = n.post_id ? `/business.html?post=${n.post_id}` : `/profile.html?u=${encodeURIComponent(handle)}`;
   const face = n.actor?.avatar_url
     ? `<img src="${esc(n.actor.avatar_url)}" alt="">`
     : esc(who.trim().charAt(0) || '?');
 
+  // პოსტზე შეტყობინება პოსტს ხსნის აქვე, ფანჯარაში.
+  // სხვა გვერდზე გადაგდება ზედმეტი ნაბიჯია — ადამიანს სურს
+  // ნახოს, რას მოეწონა, და შეტყობინებებში დარჩეს.
+  const href = n.post_id
+    ? '#'
+    : `/profile.html?u=${encodeURIComponent(handle)}`;
+
   return `
-    <a class="nt${n.read_at ? '' : ' unread'}" href="${href}">
+    <a class="nt${n.read_at ? '' : ' unread'}" href="${href}"
+       data-nid="${esc(String(n.id))}"
+       ${n.post_id ? `data-open-post="${esc(String(n.post_id))}"` : ''}>
       <span class="actor-face">${face}</span>
       <span class="nt-body">
         <span class="nt-line"><b>${esc(who)}</b> ${esc(WORDS[n.kind] ?? '')}</span>
@@ -85,5 +93,29 @@ function row(n) {
 
 delegate(root, 'click', '[data-read]', async () => {
   await markAllRead();
-  paint();
+  await paint();
+  document.dispatchEvent(new CustomEvent('tl:notif'));
+});
+
+// პოსტის გახსნა და წაკითხულად მონიშვნა
+delegate(root, 'click', '[data-nid]', async (e, node) => {
+  const postId = node.dataset.openPost;
+  if (postId) e.preventDefault();
+
+  // ჯერ ვნიშნავთ — ვიზუალი მაშინვე უნდა შეიცვალოს, სერვერს
+  // არ ველოდებით. თუ ჩავარდა, შემდეგ ჩატვირთვაზე ისევ აინთება.
+  if (!node.classList.contains('unread')) { /* უკვე წაკითხულია */ }
+  else {
+    node.classList.remove('unread');
+    markRead(node.dataset.nid).then(() => {
+      document.dispatchEvent(new CustomEvent('tl:notif'));
+    }).catch(() => {});
+  }
+
+  if (!postId) return;
+
+  const post = await postById(postId);
+  if (!post) { toast('პოსტი ვეღარ მოიძებნა — შესაძლოა წაშლილია', 'error'); return; }
+  const { openRemotePost } = await import('../components/post-modal.js');
+  openRemotePost(post);
 });

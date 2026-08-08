@@ -57,6 +57,9 @@ export function mountTabBar({ active = '' } = {}) {
   bindCreate(host);
   bindSwitch(host);
 
+  // წაკითხვისას წერტილი მაშინვე უნდა ჩაქრეს
+  document.addEventListener('tl:notif', () => paintUnread(host));
+
   // სახის გადართვისას ავატარიც უნდა შეიცვალოს
   document.addEventListener('tl:actor', () => {
     import('../lib/actor.js').then(({ activeActor }) => {
