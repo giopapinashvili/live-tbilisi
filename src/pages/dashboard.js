@@ -51,6 +51,11 @@ async function renderList() {
 
   if (!list.length) {
     root.innerHTML = `
+    <div class="cp-cta">
+      <a class="btn btn-primary" href="/create-page.html">${icon('plus', { size: 15 })} ახალი გვერდი</a>
+      <a class="btn" href="/create-page.html?kind=group">${icon('plus', { size: 15 })} ახალი ჯგუფი</a>
+    </div>
+
       ${emptyState({
     icon: 'briefcase',
     title: 'ჯერ არცერთი ბიზნესი',
@@ -63,6 +68,11 @@ async function renderList() {
   }
 
   root.innerHTML = `
+    <div class="cp-cta">
+      <a class="btn btn-primary" href="/create-page.html">${icon('plus', { size: 15 })} ახალი გვერდი</a>
+      <a class="btn" href="/create-page.html?kind=group">${icon('plus', { size: 15 })} ახალი ჯგუფი</a>
+    </div>
+
     <div class="row" style="justify-content:flex-end; margin-bottom:var(--sp-4)">
       <a class="btn btn-primary" href="?edit=new">${icon('plus', { size: 16 })} ახალი</a>
     </div>
@@ -97,6 +107,11 @@ async function renderList() {
 
 function renderForm(business) {
   root.innerHTML = `
+    <div class="cp-cta">
+      <a class="btn btn-primary" href="/create-page.html">${icon('plus', { size: 15 })} ახალი გვერდი</a>
+      <a class="btn" href="/create-page.html?kind=group">${icon('plus', { size: 15 })} ახალი ჯგუფი</a>
+    </div>
+
     <div class="row" style="margin-bottom:var(--sp-4)">
       <a class="btn btn-ghost btn-sm" href="/dashboard.html">${icon('back', { size: 14 })} უკან</a>
       <span class="spacer"></span>

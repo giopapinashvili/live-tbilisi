@@ -107,7 +107,9 @@ function paint() {
           <div class="pw-rules" data-rules hidden>
             <span data-rule="len">8 სიმბოლო</span>
             <span data-rule="up">დიდი ასო</span>
+            <span data-rule="low">პატარა ასო</span>
             <span data-rule="num">ციფრი</span>
+            <span data-rule="weak">არაა გავრცელებული</span>
             <span data-rule="same">ემთხვევა</span>
           </div>
 
@@ -256,7 +258,9 @@ function bind() {
     const ok = checkPassword(password, password2);
     if (!ok.len)  return show(err, 'პაროლი მინიმუმ 8 სიმბოლო უნდა იყოს');
     if (!ok.up)   return show(err, 'პაროლში დიდი ასო უნდა იყოს');
+    if (!ok.low)  return show(err, 'პაროლში პატარა ასოც უნდა იყოს');
     if (!ok.num)  return show(err, 'პაროლში ციფრი უნდა იყოს');
+    if (!ok.weak) return show(err, 'ეს პაროლი ძალიან გავრცელებულია — რობოტი წამში გატეხავს');
     if (!ok.same) return show(err, 'პაროლები არ ემთხვევა');
 
     if (!first) return show(err, 'სახელი აუცილებელია');
@@ -305,11 +309,19 @@ function bind() {
  * მატებს დაცვას და მხოლოდ აღიზიანებს. მნიშვნელოვანია, რომ დიდი
  * ასო და ციფრი საერთოდ იყოს: სწორედ ეს ზრდის ვარიანტების რიცხვს.
  */
+const WEAK = [
+  'password', 'parolii', '12345678', '123456789', 'qwerty123',
+  'georgia1', 'tbilisi1', 'iloveyou', 'admin123', 'welcome1',
+];
+
 function checkPassword(a, b) {
+  const low = a.toLowerCase();
   return {
     len:  a.length >= 8,
-    up:   /[A-ZА-ЯЁ]/.test(a),
+    up:   /[A-Z]/.test(a),
+    low:  /[a-z]/.test(a),
     num:  /[0-9]/.test(a),
+    weak: a.length > 0 && !WEAK.some((w) => low.includes(w)) && !/^(.)\1+$/.test(a),
     same: a.length > 0 && a === b,
   };
 }

@@ -87,29 +87,36 @@ export const isSelf = (a = activeActor()) => a?.kind === 'person';
 /* ─────────────────────────────────────────────────────────── */
 
 /** ახალი გვერდი. სახელი და გვარი არ სჭირდება — ის ხომ ადამიანი არაა. */
-export async function createPage({ name, username = null, category = null }) {
-  const sb = await supa();
-  const { data, error } = await sb.rpc('create_page', {
-    p_name: String(name ?? '').trim(),
-    p_username: username || null,
-    p_category: category || null,
-    p_kind: 'page',
-  });
-  if (error) throw new Error(error.message);
-  await loadActors({ force: true });
-  return data;
-}
+export const createPage = (o) => makeActor({ ...o, kind: 'page' });
 
 /** ახალი ჯგუფი */
-export async function createGroup({ name, username = null, category = null }) {
+export const createGroup = (o) => makeActor({ ...o, kind: 'group' });
+
+async function makeActor({
+  name, username = null, category = null, categories = [],
+  bio = null, address = null, district = null,
+  lon = null, lat = null, online = false, kind = 'page',
+}) {
   const sb = await supa();
   const { data, error } = await sb.rpc('create_page', {
     p_name: String(name ?? '').trim(),
     p_username: username || null,
     p_category: category || null,
-    p_kind: 'group',
+    p_kind: kind,
+    p_categories: categories ?? [],
+    p_address: address || null,
+    p_district: district || null,
+    p_lon: lon,
+    p_lat: lat,
+    p_online: Boolean(online),
+    p_bio: bio || null,
   });
-  if (error) throw new Error(error.message);
+
+  if (error) {
+    if (/duplicate key.*username/.test(error.message)) throw new Error('ეს ნიკი დაკავებულია');
+    throw new Error(error.message);
+  }
+
   await loadActors({ force: true });
   return data;
 }
