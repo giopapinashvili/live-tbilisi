@@ -49,11 +49,26 @@ export function mountTabBar({ active = '' } = {}) {
         (await import('../lib/theme.js')).toggleTheme();
       });
       bindCreate(host);
+      bindSwitch(host);
       if (user) paintUnread(host);
     });
   }).catch(() => { /* ბექენდის გარეშე სტუმრის ვარიანტი რჩება */ });
 
   bindCreate(host);
+  bindSwitch(host);
+
+  // სახის გადართვისას ავატარიც უნდა შეიცვალოს
+  document.addEventListener('tl:actor', () => {
+    import('../lib/actor.js').then(({ activeActor }) => {
+      const face = host.querySelector('.tab-me .tab-face');
+      const a = activeActor();
+      if (!face || !a) return;
+      face.innerHTML = a.avatar_url
+        ? `<img src="${esc(a.avatar_url)}" alt="">`
+        : esc((a.display_name ?? '?').trim().charAt(0) || '?');
+    });
+  });
+
   return host;
 }
 
@@ -99,6 +114,12 @@ function paint(host, active, user, profile) {
         <span class="tab-label">სიახლეები</span>
       </a>` : ''}
 
+    ${user ? `
+      <button class="tab tab-switch" type="button" data-actor-open aria-label="სახის გადართვა">
+        <span class="tab-ico">${icon('repost', { size: 21 })}</span>
+        <span class="tab-label">გადართვა</span>
+      </button>` : ''}
+
     ${user ? me(profile, active) : guest()}
 
     <span class="tabbar-spacer"></span>
@@ -135,6 +156,17 @@ function me(profile, active) {
       <span class="tab-ico"><span class="tab-face">${face}</span></span>
       <span class="tab-label">პროფილი</span>
     </a>`;
+}
+
+function bindSwitch(host) {
+  const btn = host.querySelector('[data-actor-open]');
+  if (!btn || btn.dataset.bound) return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const { openActorMenu } = await import('./actor-switch.js');
+    openActorMenu(btn);
+  });
 }
 
 function bindCreate(host) {

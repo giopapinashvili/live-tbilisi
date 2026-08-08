@@ -14,11 +14,11 @@ import { icon } from '../lib/icons.js';
 import { num } from '../lib/format.js';
 import { emptyState } from '../components/cards.js';
 import { guestWall } from '../lib/gate.js';
-import { publicUrlSync } from '../lib/media.js';
+import { publicUrlSync, upload } from '../lib/media.js';
 import { rich } from '../lib/richtext.js';
 import { syncProfile } from '../lib/taste.js';
 import {
-  whenAuthReady, currentUser, currentProfile, signOutUser, supa,
+  whenAuthReady, currentUser, currentProfile, signOutUser, supa, updateProfile,
 } from '../lib/supabase.js';
 import {
   profileByUsername, followCounts, postsByAuthor,
@@ -76,11 +76,23 @@ async function paint() {
   const isPage = who.kind !== 'person';
 
   root.innerHTML = `
+    <div class="pf-cover${who.cover_url ? ' has' : ''}"
+         ${who.cover_url ? `style="background-image:url('${attr(who.cover_url)}')"` : ''}>
+      ${mine ? `
+        <button class="pf-camera" type="button" data-up="cover" aria-label="გარეკანის შეცვლა">
+          ${icon('image', { size: 16 })} <span>გარეკანი</span>
+        </button>` : ''}
+    </div>
+
     <header class="pf-head">
       <div class="pf-avatar">
         ${who.avatar_url
     ? `<img src="${attr(who.avatar_url)}" alt="" referrerpolicy="no-referrer">`
     : icon('user', { size: 34 })}
+        ${mine ? `
+          <button class="pf-camera pf-camera-sm" type="button" data-up="avatar" aria-label="ფოტოს შეცვლა">
+            ${icon('image', { size: 14 })}
+          </button>` : ''}
       </div>
 
       <div class="pf-info">
@@ -137,7 +149,9 @@ async function paint() {
       </button>` : ''}
     </div>
 
-    <div class="pf-grid" id="grid"></div>`;
+    <div class="pf-grid" id="grid"></div>
+
+    <input type="file" id="upfile" hidden accept="image/jpeg,image/png,image/webp,image/avif">`;
 
   paintHighlights();
   paintGrid();
@@ -190,6 +204,8 @@ function paintGrid() {
     : `<span class="gcell-text">${esc((p.body ?? '').slice(0, 90))}</span>`}
 
         ${more ? `<span class="gcell-multi">${icon('layers', { size: 14 })}</span>` : ''}
+        ${mine ? `<span class="gcell-del" role="button" tabindex="0"
+                        data-del-post="${attr(p.id)}" aria-label="წაშლა">${icon('cross', { size: 13 })}</span>` : ''}
         <span class="gcell-over">
           <span>${icon('heart', { size: 15, fill: true })} ${num(p.like_count)}</span>
           <span>${icon('bubble', { size: 15 })} ${num(p.comment_count)}</span>
@@ -240,6 +256,51 @@ delegate(root, 'click', '[data-post]', async (e, cell) => {
   if (!post) return;
   const { openRemotePost } = await import('../components/post-modal.js');
   openRemotePost(post);
+});
+
+/* ─── ფოტოს ატვირთვა ───────────────────────────────────────── */
+
+delegate(root, 'click', '[data-up]', (e, btn) => {
+  const input = $('#upfile');
+  if (!input) return;
+  input.dataset.target = btn.dataset.up;
+  input.click();
+});
+
+delegate(root, 'change', '#upfile', async (e, input) => {
+  const file = input.files?.[0];
+  const target = input.dataset.target;
+  input.value = '';
+  if (!file) return;
+
+  toast('იტვირთება…');
+  try {
+    // ავატარი პატარაა, გარეკანი განიერი — ორივე იჭრება ატვირთვამდე
+    const m = await upload(file, { bucket: 'avatars' });
+    const url = publicUrlSync(m.path, 'avatars');
+    await updateProfile(target === 'cover' ? { cover_url: url } : { avatar_url: url });
+    who = currentProfile();
+    await paint();
+    toast(target === 'cover' ? 'გარეკანი შეიცვალა' : 'ფოტო შეიცვალა');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+});
+
+/* ─── პოსტის წაშლა ─────────────────────────────────────────── */
+
+delegate(root, 'click', '[data-del-post]', async (e, node) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!confirm('პოსტი და მისი ფოტოები სამუდამოდ წაიშლება. გავაგრძელო?')) return;
+
+  const { deletePost } = await import('../lib/posts.js');
+  try {
+    await deletePost(node.dataset.delPost);
+    posts = posts.filter((p) => String(p.id) !== node.dataset.delPost);
+    paintGrid();
+    toast('წაიშალა');
+  } catch (err) { toast(err.message, 'error'); }
 });
 
 // ახალი პოსტის დადებისას ბადე თავად განახლდეს
