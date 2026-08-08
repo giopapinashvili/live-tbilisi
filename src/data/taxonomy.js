@@ -266,6 +266,68 @@ export const OSM_INDEX = (() => {
       }
     }
   }
+
+  /**
+   * დამატებითი ტეგები — ის, რაც ქვეკატეგორიების სიაში არ ეწერა.
+   *
+   * მთელი ქალაქის იმპორტისას ჩნდება ისეთი ობიექტები, რომლებზეც
+   * ნაძალადევის ცდისას არ გვიფიქრია: მეტროს შესასვლელი, ტრამვაის
+   * გაჩერება, ისტორიული ძეგლი, ხედი, შადრევანი. მათი გარეშე ისინი
+   * უცნობ ჯგუფში ჩავარდებოდნენ და რუკაზე ნაცრისფერი წერტილებით
+   * აღიბეჭდებოდნენ.
+   */
+  const EXTRA = {
+    // ტრანსპორტი
+    'public_transport=station':        ['transport', 'station'],
+    'public_transport=stop_position':  ['transport', 'busstop'],
+    'public_transport=platform':       ['transport', 'busstop'],
+    'railway=subway_entrance':         ['transport', 'metro'],
+    'railway=tram_stop':               ['transport', 'busstop'],
+    'railway=halt':                    ['transport', 'station'],
+    'amenity=bus_station':             ['transport', 'station'],
+    'aeroway=terminal':                ['transport', 'airport'],
+    'aeroway=aerodrome':               ['transport', 'airport'],
+    'amenity=taxi':                    ['transport', 'taxi'],
+    'amenity=bicycle_rental':          ['transport', 'bike'],
+    'amenity=car_sharing':             ['transport', 'taxi'],
+
+    // დასვენება და კულტურა
+    'leisure=playground':              ['leisure', 'playground'],
+    'leisure=garden':                  ['leisure', 'park'],
+    'leisure=nature_reserve':          ['leisure', 'park'],
+    'leisure=dog_park':                ['leisure', 'park'],
+    'natural=peak':                    ['leisure', 'viewpoint'],
+    'natural=spring':                  ['leisure', 'park'],
+    'natural=water':                   ['leisure', 'park'],
+    'landuse=recreation_ground':       ['leisure', 'park'],
+    'landuse=cemetery':                ['public', 'cemetery'],
+    'tourism=viewpoint':               ['leisure', 'viewpoint'],
+    'tourism=artwork':                 ['leisure', 'museum'],
+    'tourism=picnic_site':             ['leisure', 'park'],
+    'historic=monument':               ['leisure', 'viewpoint'],
+    'historic=memorial':               ['leisure', 'viewpoint'],
+    'historic=castle':                 ['leisure', 'museum'],
+    'historic=ruins':                  ['leisure', 'viewpoint'],
+    'historic=church':                 ['public', 'church'],
+    'historic=archaeological_site':    ['leisure', 'museum'],
+    'man_made=tower':                  ['leisure', 'viewpoint'],
+    'amenity=fountain':                ['leisure', 'park'],
+    'club=sport':                      ['leisure', 'gym'],
+    'club=social':                     ['public', 'community'],
+
+    // გადაუდებელი და საჯარო
+    'emergency=ambulance_station':     ['health', 'clinic'],
+    'amenity=police':                  ['public', 'police'],
+    'amenity=fire_station':            ['public', 'fire'],
+    'amenity=shelter':                 ['public', 'community'],
+    'amenity=toilets':                 ['public', 'toilet'],
+    'amenity=drinking_water':          ['public', 'toilet'],
+  };
+
+  for (const [tag, [cat, sub]] of Object.entries(EXTRA)) {
+    if (!idx[tag]) idx[tag] = { category: cat, subcategory: sub };
+  }
+
   return idx;
 })();
 

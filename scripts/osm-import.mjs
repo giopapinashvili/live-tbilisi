@@ -29,22 +29,48 @@ const FRESH = args.includes('--fresh');
 
 /* ─── Overpass ─────────────────────────────────────────────── */
 
-const QUERY = `
-[out:json][timeout:300];
+/**
+ * მოთხოვნები ჯგუფებად.
+ *
+ * ერთ დიდ მოთხოვნად რომ გავაერთიანოთ, Overpass მთელ თბილისზე
+ * დროს ამოწურავს და ცარიელს დააბრუნებს. ჯგუფებად კი თითოეული
+ * მსუბუქია და თუ ერთი ჩავარდა, დანარჩენი მაინც მოდის.
+ *
+ * relation-იც შედის: დიდი პარკი, ბაზრობა და სავაჭრო ცენტრი
+ * ხშირად relation-ია, არა node ან way — და სწორედ ისინი
+ * გამოგვრჩებოდა.
+ */
+const GROUPS = [
+  ['კვება და მაღაზია',   ['amenity', 'shop']],
+  ['ოფისი და სერვისი',   ['office', 'craft', 'healthcare']],
+  ['დასვენება და ტურიზმი', ['leisure', 'tourism', 'sport']],
+  ['ტრანსპორტი',         ['public_transport', 'railway', 'aeroway']],
+  ['კულტურა და ისტორია', ['historic', 'man_made', 'club']],
+  ['ბუნება და საზოგადო', ['natural', 'emergency', 'military', 'landuse']],
+];
+
+function queryFor(keys) {
+  const b = bbox();
+  const parts = keys.flatMap((k) => [
+    `node["${k}"](${b});`,
+    `way["${k}"](${b});`,
+    `relation["${k}"](${b});`,
+  ]);
+  return `[out:json][timeout:600];\n(\n${parts.join('\n')}\n);\nout center tags;`;
+}
+
+// ავტობუსის გაჩერება ცალკეა: highway=bus_stop ძალიან ბევრია და
+// მას საკუთარი მოთხოვნა სჭირდება, თორემ დანარჩენს აჭედავს
+const EXTRA = [
+  ['გაჩერებები', `[out:json][timeout:600];
 (
-  node["amenity"](${bbox()});
-  way["amenity"](${bbox()});
-  node["shop"](${bbox()});
-  way["shop"](${bbox()});
-  node["office"](${bbox()});
-  node["healthcare"](${bbox()});
-  node["leisure"](${bbox()});
-  way["leisure"](${bbox()});
-  node["tourism"](${bbox()});
-  node["craft"](${bbox()});
+  node["highway"="bus_stop"](${'${bbox()}'});
+  node["railway"="tram_stop"](${'${bbox()}'});
+  node["railway"="subway_entrance"](${'${bbox()}'});
+  node["amenity"="bus_station"](${'${bbox()}'});
 );
-out center tags;
-`;
+out center tags;`],
+];
 
 function bbox() {
   const [w, s, e, n] = CITY.bbox;
@@ -60,19 +86,55 @@ async function fetchOverpass() {
     } catch { /* ქეში არ არსებობს */ }
   }
 
-  console.log('🌍 Overpass-ის მოთხოვნა… (შეიძლება 1-3 წუთი დასჭირდეს)');
-  const res = await fetch(OVERPASS, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ data: QUERY }),
-  });
-  if (!res.ok) throw new Error(`Overpass ${res.status}: ${await res.text()}`);
+  console.log('🌍 Overpass — ექვსი ჯგუფი, თითო 1-3 წუთი.\n');
 
-  const data = await res.json();
+  const seen = new Map();          // id → ელემენტი, დუბლის გარეშე
+
+  for (const [label, keys] of GROUPS) {
+    process.stdout.write(`   ${label}… `);
+    try {
+      const els = await ask(queryFor(keys));
+      let added = 0;
+      for (const e of els) {
+        const key = `${e.type}${e.id}`;
+        if (!seen.has(key)) { seen.set(key, e); added++; }
+      }
+      console.log(`${els.length} (ახალი ${added})`);
+    } catch (err) {
+      // ერთი ჯგუფის ჩავარდნა დანარჩენს არ აჩერებს — ნაწილობრივი
+      // შედეგი ბევრად სჯობს ნულს
+      console.log(`ჩავარდა: ${err.message}`);
+    }
+    await sleep(3000);             // Overpass-ს სუნთქვა სჭირდება
+  }
+
+  const data = { elements: [...seen.values()] };
   await fs.mkdir(path.dirname(CACHE), { recursive: true });
   await fs.writeFile(CACHE, JSON.stringify(data));
-  console.log(`✅ ${data.elements.length} ელემენტი, ქეშირებულია ${CACHE}`);
+  console.log(`\n✅ სულ ${data.elements.length} უნიკალური ობიექტი → ${CACHE}`);
   return data;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** ერთი მოთხოვნა, სამი ცდით — Overpass ხშირად დროებით უარს ამბობს */
+async function ask(query, tries = 3) {
+  for (let i = 1; i <= tries; i++) {
+    try {
+      const res = await fetch(OVERPASS, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ data: query }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return json.elements ?? [];
+    } catch (err) {
+      if (i === tries) throw err;
+      await sleep(i * 10000);      // 10წმ, 20წმ
+    }
+  }
+  return [];
 }
 
 /* ─── OSM → ჩვენი მოდელი ───────────────────────────────────── */
