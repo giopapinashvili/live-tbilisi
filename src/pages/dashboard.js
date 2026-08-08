@@ -36,7 +36,9 @@ async function init() {
 
 async function route() {
   const editId = params.get('edit');
-  if (editId === 'new') return renderForm(null);
+  // ძველი ფორმა უბანს ითხოვდა და IT კატეგორიები არ ჰქონდა.
+  // ახალი გვერდი მხოლოდ /create-page.html-ით იქმნება.
+  if (editId === 'new') { location.replace('/create-page.html'); return; }
   if (editId) return renderForm(await fetchBusiness(editId));
   return renderList();
 }
@@ -62,7 +64,7 @@ async function renderList() {
     text: 'დაამატე შენი ბიზნესი, რომ რუკაზე გამოჩნდეს — მენიუთი, ფასებით და აქციებით.',
   })}
       <div class="row" style="justify-content:center">
-        <a class="btn btn-primary btn-lg" href="?edit=new">ბიზნესის დამატება</a>
+        <a class="btn btn-primary btn-lg" href="/create-page.html">გვერდის შექმნა</a>
       </div>`;
     return;
   }
@@ -74,7 +76,7 @@ async function renderList() {
     </div>
 
     <div class="row" style="justify-content:flex-end; margin-bottom:var(--sp-4)">
-      <a class="btn btn-primary" href="?edit=new">${icon('plus', { size: 16 })} ახალი</a>
+      <a class="btn btn-primary" href="/create-page.html">${icon('plus', { size: 16 })} ახალი</a>
     </div>
     <div class="stack">
       ${list.map((b) => {
