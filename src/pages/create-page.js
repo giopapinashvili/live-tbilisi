@@ -114,18 +114,22 @@ function paint(d = {}) {
         <fieldset class="cp-lang">
           <legend>რომელი ჩანდეს ეკრანზე</legend>
           <label class="cp-radio">
-            <input type="radio" name="shown" value="ka" ${d.shown !== 'en' ? 'checked' : ''}>
+            <input type="checkbox" name="show_ka" ${d.show_ka !== undefined ? (d.show_ka ? 'checked' : '') : 'checked'}>
             <span data-prev="ka">ქართული</span>
           </label>
           <label class="cp-radio">
-            <input type="radio" name="shown" value="en" ${d.shown === 'en' ? 'checked' : ''}>
+            <input type="checkbox" name="show_en" ${d.show_en ? 'checked' : ''}>
             <span data-prev="en">ინგლისური</span>
           </label>
         </fieldset>
 
+        <div class="cp-preview">
+          ეკრანზე: <b data-shown>—</b>
+        </div>
+
         <p class="cp-hint">
-          მეორე სახელი არსად არ გამოჩნდება, მაგრამ ძებნაში იმუშავებს —
-          ვინც ქართულად მოძებნის, მაინც გიპოვის.
+          მონიშნე ერთი ან ორივე. მოუნიშნავი სახელი არსად არ გამოჩნდება,
+          მაგრამ ძებნაში იმუშავებს — ვინც ქართულად მოძებნის, მაინც გიპოვის.
         </p>
 
         <label class="auth-field">
@@ -303,15 +307,28 @@ function bind() {
     });
   }
 
-  // რომელი სახელი ჩანს — ცოცხლად, რომ არჩევანი თვალსაჩინო იყოს
+  // ცოცხალი გადახედვა — რომ ბრმად არ ირჩევდე
   const syncNames = () => {
-    const ka = form.querySelector('[name="name_ka"]')?.value.trim();
-    const en = form.querySelector('[name="name_en"]')?.value.trim();
+    const ka = form.querySelector('[name="name_ka"]')?.value.trim() ?? '';
+    const en = form.querySelector('[name="name_en"]')?.value.trim() ?? '';
+    const okKa = form.querySelector('[name="show_ka"]')?.checked;
+    const okEn = form.querySelector('[name="show_en"]')?.checked;
+
     form.querySelector('[data-prev="ka"]').textContent = ka ? `ქართული — ${ka}` : 'ქართული';
     form.querySelector('[data-prev="en"]').textContent = en ? `ინგლისური — ${en}` : 'ინგლისური';
+
+    const out = form.querySelector('[data-shown]');
+    if (out) {
+      const { name } = composeName(ka, en, okKa, okEn);
+      out.textContent = name || '—';
+      out.classList.toggle('bad', !name && Boolean(ka || en));
+    }
   };
-  form.querySelector('[name="name_ka"]')?.addEventListener('input', syncNames);
-  form.querySelector('[name="name_en"]')?.addEventListener('input', syncNames);
+  ['name_ka', 'name_en', 'show_ka', 'show_en'].forEach((n) => {
+    const el = form.querySelector(`[name="${n}"]`);
+    el?.addEventListener('input', syncNames);
+    el?.addEventListener('change', syncNames);
+  });
   syncNames();
 
   const online = document.querySelector('input[name="online"]');
@@ -349,13 +366,10 @@ function bind() {
     const fd = new FormData(form);
     const ka = String(fd.get('name_ka') ?? '').trim();
     const en = String(fd.get('name_en') ?? '').trim();
-    const shown = String(fd.get('shown') ?? 'ka');
+    const { name, altName } = composeName(ka, en, Boolean(fd.get('show_ka')), Boolean(fd.get('show_en')));
 
-    // ჩანს ის, რაც აირჩია; მეორე ჩუმად ინახება ძებნისთვის
-    const name = (shown === 'en' ? en : ka) || en || ka;
-    const altName = (shown === 'en' ? ka : en) || null;
-
-    if (!name) return show(err, 'შეავსე მინიმუმ ერთი სახელი');
+    if (!ka && !en) return show(err, 'შეავსე მინიმუმ ერთი სახელი');
+    if (!name) return show(err, 'მონიშნე, რომელი სახელი უნდა ჩანდეს');
 
     if (kind === 'page' && !picked.length) {
       return show(err, 'აირჩიე მინიმუმ ერთი კატეგორია');
@@ -394,6 +408,25 @@ function bind() {
       btn.textContent = kind === 'group' ? 'ჯგუფის შექმნა' : 'გვერდის შექმნა';
     }
   });
+}
+
+/**
+ * ორი სახელიდან ერთი ჩანაწერი.
+ *
+ * ორივე მონიშნული — ორივე ჩანს, შუაში წერტილით.
+ * ერთი — მხოლოდ ის ჩანს, მეორე ძებნას რჩება.
+ *
+ * მოუნიშნავი სახელი არ იკარგება: ის alt_name-ში მიდის და
+ * ძებნა მასაც პოულობს. ეს არის მთელი აზრი — „ვებქრაფთ ჯორჯია"
+ * ეკრანზე არავის უნდა, მაგრამ ვინც ასე ეძებს, უნდა იპოვოს.
+ */
+function composeName(ka, en, showKa, showEn) {
+  const shown = [showKa && ka, showEn && en].filter(Boolean);
+  const hidden = [!showKa && ka, !showEn && en].filter(Boolean);
+  return {
+    name: shown.join(' · '),
+    altName: hidden.join(' ') || null,
+  };
 }
 
 /**

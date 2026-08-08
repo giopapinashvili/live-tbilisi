@@ -1853,3 +1853,11 @@ button.pf-stat:hover b { color: var(--accent); }
   background: color-mix(in srgb, var(--accent) 7%, transparent);
   font-weight: 600;
 }
+.cp-preview {
+  font-size: var(--fs-xs); color: var(--ink-3);
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 8px 11px;
+}
+.cp-preview b { color: var(--ink); font-size: var(--fs-sm); }
+.cp-preview b.bad { color: var(--danger, #E0245E); }
