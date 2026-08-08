@@ -10,6 +10,7 @@ import { $, esc, attr, delegate, toast } from '../lib/dom.js';
 import { icon } from '../lib/icons.js';
 import { allowed } from '../lib/gate.js';
 import { rich as richText } from '../lib/richtext.js';
+import { publicUrlSync } from '../lib/media.js';
 import { followSystemTheme } from '../lib/theme.js';
 import { mountTabBar } from '../components/tabbar.js';
 import { mountSearchBox } from '../components/searchbox.js';
@@ -158,10 +159,9 @@ function liveCard(p) {
   </article>`;
 }
 
-function mediaUrl(path) {
-  const base = (import.meta.env?.VITE_SUPABASE_URL ?? '').replace(/\/$/, '');
-  return `${base}/storage/v1/object/public/posts/${path}`;
-}
+// იგივე ლოგიკა media.js-შია; ორჯერ დაწერილი ერთხელ უკვე
+// გამოგვეპარა და ბმული ცარიელი გამოვიდა
+const mediaUrl = (path) => publicUrlSync(path, 'posts');
 
 function card(e) {
   if (e.type === 'live') return liveCard(e.post);

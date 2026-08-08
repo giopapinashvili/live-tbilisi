@@ -15,6 +15,7 @@
  */
 
 import { supa, currentUser } from './supabase.js';
+import { SUPABASE } from './config.js';
 
 export const LIMITS = {
   imageBytes: 10 * 1024 * 1024,   // შესვლისას; შემცირების შემდეგ გაცილებით ნაკლებია
@@ -180,12 +181,18 @@ export async function publicUrl(path, bucket = 'posts') {
 
 /**
  * სინქრონული ვარიანტი — შაბლონებში გამოსადეგი, სადაც await არ გვაქვს.
- * Supabase-ის საჯარო მისამართი მუდმივი ფორმატისაა.
+ *
+ * მისამართი კონფიგიდან მოდის, არა პირდაპირ import.meta.env-იდან.
+ * ეს არაა სილამაზე: .env GitHub-ზე არ ადის, ამიტომ Cloudflare-ის
+ * აწყობისას ცვლადი ცარიელია. მაშინ ბმული ხდებოდა
+ * „/storage/v1/..." — საიტის შიგნით, სადაც ფოტო არ არსებობს.
+ * კონფიგს კი ჩაწერილი ნაგულისხმევი აქვს.
  */
 export function publicUrlSync(path, bucket = 'posts') {
   if (!path) return '';
   if (/^https?:\/\//.test(path)) return path;
-  const base = (import.meta.env?.VITE_SUPABASE_URL ?? '').replace(/\/$/, '');
+  const base = SUPABASE.url.replace(/\/$/, '');
+  if (!base) return '';
   return `${base}/storage/v1/object/public/${bucket}/${path}`;
 }
 

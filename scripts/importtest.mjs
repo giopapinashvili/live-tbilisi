@@ -202,9 +202,41 @@ console.log('\nიმპორტები');
 walk(SRC);
 checkStyles();
 
+/* ─── env-ის პირდაპირი კითხვა ──────────────────────────────── */
+/*
+ * .env GitHub-ზე არ ადის, ამიტომ Cloudflare-ის აწყობისას
+ * import.meta.env ცარიელია. კონფიგს ნაგულისხმევი აქვს ჩაწერილი,
+ * პირდაპირ წაკითხვას კი — არა. ერთხელ უკვე გამომრჩა: ფოტოს
+ * ბმული ცარიელი გამოვიდა და სურათი არსად ჩანდა.
+ */
+{
+  const bad = [];
+  (function scan(d) {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { scan(p); continue; }
+      if (!e.name.endsWith('.js')) continue;
+      if (p.endsWith(path.join('lib', 'config.js'))) continue;   // ერთადერთი ნებადართული
+      const src = fs.readFileSync(p, 'utf8');
+      for (const m of src.matchAll(/import\.meta\.env\??\.(\w+)/g)) {
+        if (m[1] === 'DEV' || m[1] === 'PROD' || m[1] === 'MODE') continue;
+        bad.push(`${path.relative(ROOT, p)} — ${m[1]}`);
+      }
+    }
+  })(SRC);
+
+  if (bad.length) {
+    console.error('\nგარემოს ცვლადი პირდაპირ იკითხება (config.js-ის გვერდის ავლით):');
+    for (const b of bad) console.error(`  ✗ ${b}`);
+    console.error('  → გამოიყენე src/lib/config.js, სადაც ნაგულისხმევი მნიშვნელობებია\n');
+    process.exit(1);
+  }
+}
+
 console.log(`\n  ${files} ფაილი, ${checked} იმპორტი`);
 if (problems) {
   console.error(`\n❌ ${problems} გატეხილი იმპორტი — აწყობა ჩავარდება\n`);
   process.exit(1);
 }
 console.log('\n✅ ყველა იმპორტი ადგილზეა\n');
+

@@ -6,9 +6,10 @@
  * აქ ვაწყობთ VITE_SITE_URL-ის ბაზაზე.
  */
 
-const SITE = (import.meta.env?.VITE_SITE_URL ?? '').replace(/\/$/, '');
 
 /** სრული აბსოლუტური URL მოცემული ბილიკისთვის */
+import { SITE_URL as SITE } from './config.js';
+
 export function absUrl(pathname = location.pathname + location.search) {
   const base = SITE || location.origin;
   return `${base}${pathname.startsWith('/') ? '' : '/'}${pathname}`;

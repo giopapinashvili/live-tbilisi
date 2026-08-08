@@ -35,6 +35,14 @@ export const TILES = {
   maptilerKey: str('VITE_MAPTILER_KEY'),
 };
 
+/**
+ * საიტის მისამართი. იგივე მიზეზი, რაც Supabase-ს: .env GitHub-ზე
+ * არ ადის, ამიტომ აწყობისას ცვლადი ცარიელია და canonical ბმულები
+ * ფარდობითი გამოდიოდა.
+ */
+export const SITE_URL = str('VITE_SITE_URL',
+  'https://live-tbilisi.gio-papinashvili20-bd3.workers.dev').replace(/\/$/, '');
+
 export const BUNDLE_BASE = str('VITE_BUNDLE_BASE', '/bundles').replace(/\/$/, '');
 
 export const MEILI = {
