@@ -55,9 +55,20 @@ export function loadActors({ force = false } = {}) {
 export const allActors = () => actors;
 export const activeId_ = () => activeId;
 
-/** ვისი სახელით ვმოქმედებ. ჩატვირთვამდე — ჩემი პირადი. */
+/**
+ * ვისი სახელით ვმოქმედებ.
+ *
+ * შენახულ არჩევანს პირდაპირ localStorage-იდან ვკითხულობთ და არა
+ * მხოლოდ ჩატვირთული სიიდან. მიზეზი: loadActors() ასინქრონულია,
+ * ხოლო გვერდი მაშინვე იწყებს კითხვას — შეტყობინებებს, პროფილს,
+ * პოსტებს. სანამ სია მოვიდოდა, ყველაფერი ადამიანზე მიდიოდა და
+ * გვერდზე გადართვა თითქოს არ მუშაობდა.
+ */
 export function actorId() {
-  return activeId ?? currentUser()?.id ?? null;
+  if (activeId) return activeId;
+  const saved = read();
+  if (saved) return saved;
+  return currentUser()?.id ?? null;
 }
 
 export function activeActor() {

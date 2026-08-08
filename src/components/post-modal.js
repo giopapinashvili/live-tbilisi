@@ -381,6 +381,10 @@ async function rPaint() {
             <a class="pm-name" href="${href}">${esc(a.display_name ?? '')}</a>
             ${rPost.place_name ? `<div class="pm-loc">${esc(rPost.place_name)}</div>` : ''}
           </div>
+
+          <button class="pm-more" type="button" data-ract="menu" aria-label="მეტი">
+            ${icon('menu', { size: 18 })}
+          </button>
         </header>
 
         <div class="pm-body">
@@ -416,10 +420,6 @@ async function rPaint() {
               ${icon('plane', { size: 25 })}
             </button>
             <span class="spacer"></span>
-            ${rPost.mine || rPost.author?.id === (await myId()) ? `
-              <button class="post-act" type="button" data-ract="delete" aria-label="წაშლა">
-                ${icon('cross', { size: 22 })}
-              </button>` : ''}
           </div>
 
           <div class="pm-likes">${num(rPost.like_count)} მოწონება</div>
@@ -448,8 +448,11 @@ async function myId() {
   return currentUser()?.id ?? null;
 }
 
-function rCommentRow(c, rich, ago, num, depth = 0) {
+function rCommentRow(c, rich, ago, num, depth = 0, rootId = null) {
   const a = c.author ?? {};
+  // პასუხი ყოველთვის ძირეულს ებმება: პასუხზე პასუხი ხის
+  // უსასრულო განშტოებას ქმნის და ეკრანზე ვიწროვდება
+  const replyTo = rootId ?? c.id;
   return `
     <div class="cmt${depth ? ' cmt-reply-row' : ''}">
       <span class="cmt-avatar">
@@ -461,13 +464,14 @@ function rCommentRow(c, rich, ago, num, depth = 0) {
         <div class="cmt-meta">
           <span>${esc(ago(c.created_at))}</span>
           ${c.like_count ? `<span>${num(c.like_count)} მოწონება</span>` : ''}
-          <button type="button" class="cmt-reply" data-rreply="${attr(c.id)}"
-                  data-name="${attr(a.display_name ?? '')}">პასუხი</button>
+          <button type="button" class="cmt-reply" data-rreply="${attr(replyTo)}"
+                  data-name="${attr(a.display_name ?? '')}"
+                  data-handle="${attr(a.username ?? '')}">პასუხი</button>
           <button type="button" class="cmt-reply" data-rdel="${attr(c.id)}">წაშლა</button>
         </div>
         ${c.replies?.length ? `
           <div class="cmt-replies">
-            ${c.replies.map((r) => rCommentRow(r, rich, ago, num, depth + 1)).join('')}
+            ${c.replies.map((r) => rCommentRow(r, rich, ago, num, depth + 1, c.id)).join('')}
           </div>` : ''}
       </div>
       <button class="cmt-like act-heart" type="button" data-rclike="${attr(c.id)}"
@@ -490,9 +494,22 @@ function rBind() {
     const rep = e.target.closest('[data-rreply]');
     if (rep) {
       if (!allowed('reply')) return;
-      rReplyTo = { id: rep.dataset.rreply, name: rep.dataset.name };
+      rReplyTo = {
+        id: rep.dataset.rreply,
+        name: rep.dataset.name,
+        handle: rep.dataset.handle || '',
+      };
       await rPaint(); rBind();
-      rHost.querySelector('.pm-input')?.focus();
+
+      // ველი წინასწარ ივსება @სახელით — ისე, როგორც ინსტაგრამზე.
+      // ასე ჩანს, რომ პასუხის რეჟიმი მართლა ჩაირთო.
+      const input = rHost.querySelector('.pm-input');
+      if (input) {
+        if (rReplyTo.handle) input.value = `@${rReplyTo.handle} `;
+        input.focus();
+        input.selectionStart = input.selectionEnd = input.value.length;
+        rHost.querySelector('.cmt-send').disabled = !input.value.trim();
+      }
       return;
     }
 
@@ -533,6 +550,12 @@ function rBind() {
         rPost.like_count = Math.max(0, (rPost.like_count ?? 0) + (on ? 1 : -1));
         await rPaint(); rBind();
       } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    if (act === 'menu') {
+      const btn = e.target.closest('[data-ract="menu"]');
+      openPostMenu(btn, rPost);
       return;
     }
 
@@ -580,4 +603,95 @@ function rClose() {
   rHost.dataset.open = 'false';
   document.body.style.overflow = '';
   setTimeout(() => { rHost.hidden = true; }, 240);
+}
+
+
+/* ─── პოსტის მენიუ ─────────────────────────────────────────── */
+
+/**
+ * სამი წერტილი, როგორც ინსტაგრამზე.
+ *
+ * ჯვარი კუთხეში არასწორი იყო ორი მიზეზით: ის მხოლოდ წაშლას
+ * იძლეოდა და დახურვის ღილაკს ჰგავდა. მენიუში კი ყველა ქმედება
+ * ერთად ჩანს და შემთხვევით არაფერი წაიშლება.
+ */
+async function openPostMenu(anchor, post) {
+  const { currentUser: cu } = await import('../lib/supabase.js');
+  const { actorId: aid } = await import('../lib/actor.js');
+  const mine = post.author?.id === aid() || post.author?.id === cu()?.id;
+
+  document.querySelector('.actor-menu')?.remove();
+  const menu = el('div', { class: 'actor-menu pm-menu' });
+
+  const r = anchor.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(r.left - 180, window.innerWidth - 230))}px`;
+  menu.style.top = `${Math.min(r.bottom + 6, window.innerHeight - 220)}px`;
+
+  menu.innerHTML = `
+    ${mine ? `
+      <button class="actor-item" type="button" data-pmenu="edit">
+        <span>${icon('edit', { size: 16 })}</span><span><b>რედაქტირება</b></span>
+      </button>` : ''}
+    <button class="actor-item" type="button" data-pmenu="copy">
+      <span>${icon('share', { size: 16 })}</span><span><b>ბმულის კოპირება</b></span>
+    </button>
+    ${mine ? `
+      <div class="actor-sep"></div>
+      <button class="actor-item danger" type="button" data-pmenu="delete">
+        <span>${icon('cross', { size: 16 })}</span><span><b>წაშლა</b></span>
+      </button>` : `
+      <button class="actor-item danger" type="button" data-pmenu="report">
+        <span>${icon('flag', { size: 16 })}</span><span><b>საჩივარი</b></span>
+      </button>`}`;
+
+  document.body.appendChild(menu);
+
+  const onDoc = async (e) => {
+    const pick = e.target.closest('[data-pmenu]');
+    if (!pick) {
+      if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', onDoc, true); }
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    menu.remove();
+    document.removeEventListener('click', onDoc, true);
+
+    const what = pick.dataset.pmenu;
+
+    if (what === 'copy') {
+      const url = `${location.origin}/profile.html?u=${post.author?.username ?? ''}`;
+      try { await navigator.clipboard.writeText(url); toast('ბმული დაკოპირდა'); }
+      catch { toast('ვერ დავაკოპირე', 'error'); }
+      return;
+    }
+
+    if (what === 'edit') {
+      const next = prompt('პოსტის ტექსტი:', post.body ?? '');
+      if (next === null || next === post.body) return;
+      const { editPost } = await import('../lib/posts.js');
+      try {
+        await editPost(post.id, next);
+        post.body = next.trim();
+        await rPaint(); rBind();
+        toast('შესწორდა');
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    if (what === 'delete') {
+      if (!confirm('პოსტი და მისი ფოტოები სამუდამოდ წაიშლება. გავაგრძელო?')) return;
+      const { deletePost } = await import('../lib/posts.js');
+      try {
+        await deletePost(post.id);
+        toast('წაიშალა');
+        rClose();
+        document.dispatchEvent(new CustomEvent('tl:post', { detail: { deleted: post.id } }));
+      } catch (err) { toast(err.message, 'error'); }
+      return;
+    }
+
+    if (what === 'report') toast('საჩივარი მალე დაემატება');
+  };
+  setTimeout(() => document.addEventListener('click', onDoc, true), 0);
 }

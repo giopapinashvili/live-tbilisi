@@ -208,8 +208,6 @@ function paintGrid() {
     : `<span class="gcell-text">${esc((p.body ?? '').slice(0, 90))}</span>`}
 
         ${more ? `<span class="gcell-multi">${icon('layers', { size: 14 })}</span>` : ''}
-        ${mine ? `<span class="gcell-del" role="button" tabindex="0"
-                        data-del-post="${attr(p.id)}" aria-label="წაშლა">${icon('cross', { size: 13 })}</span>` : ''}
         <span class="gcell-over">
           <span>${icon('heart', { size: 15, fill: true })} ${num(p.like_count)}</span>
           <span>${icon('bubble', { size: 15 })} ${num(p.comment_count)}</span>

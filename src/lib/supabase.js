@@ -109,19 +109,32 @@ export async function refreshProfile() {
   return cachedProfile;
 }
 
-/** პროფილის შეცვლა. მხოლოდ საკუთარი — ამას ბაზა ამოწმებს. */
-export async function updateProfile(patch) {
+/**
+ * პროფილის შეცვლა.
+ *
+ * ცვლის იმ სახეს, რომლითაც ამ წუთში ვმოქმედებ — არა ყოველთვის
+ * ადამიანს. გვერდზე გადართული რომ იყო და ავატარი აგეტვირთა,
+ * შენი პირადი ფოტო იცვლებოდა: სწორედ ეს ხარვეზი იყო.
+ *
+ * უფლებას ბაზა ამოწმებს: სხვის პროფილს can_act_as() ვერ გაატარებს.
+ */
+export async function updateProfile(patch, targetId = null) {
   if (!cachedUser) throw new Error('შესვლა საჭიროა');
+
+  const { actorId } = await import('./actor.js');
+  const id = targetId ?? actorId() ?? cachedUser.id;
+
   const sb = await supa();
   const { data, error } = await sb
     .from('profiles')
     .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq('id', cachedUser.id)
+    .eq('id', id)
     .select()
     .single();
   if (error) throw new Error(readableError(error));
-  cachedProfile = data;
-  broadcast();
+
+  // ქეშს მხოლოდ მაშინ ვცვლით, თუ ეს ჩემი პირადი პროფილია
+  if (id === cachedUser.id) { cachedProfile = data; broadcast(); }
   return data;
 }
 

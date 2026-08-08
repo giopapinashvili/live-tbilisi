@@ -183,17 +183,9 @@ export function openProfileEdit(who, onSaved) {
     btn.textContent = 'ვინახავ…';
 
     try {
-      // საკუთარ პროფილს updateProfile ინახავს და ქეშსაც აახლებს;
-      // გვერდი სხვა სტრიქონია, ამიტომ პირდაპირ ბაზაში მიდის
-      if (who.id === currentUser()?.id) {
-        await updateProfile(patch);
-      } else {
-        const sb = await supa();
-        const { error } = await sb.from('profiles')
-          .update({ ...patch, updated_at: new Date().toISOString() })
-          .eq('id', who.id);
-        if (error) throw new Error(readableError(error));
-      }
+      // id ცხადად გადაეცემა — ორი გზა ერთი საქმისთვის ზედმეტია
+      // და ერთგან აუცილებლად შეგვეშლებოდა
+      await updateProfile(patch, who.id);
       toast('შენახულია');
       close();
       onSaved?.();
